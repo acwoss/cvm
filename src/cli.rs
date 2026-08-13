@@ -81,6 +81,14 @@ pub enum Command {
         command: Vec<String>,
     },
 
+    /// Open an environment's `.env` file in your editor ($VISUAL, then $EDITOR)
+    ///
+    /// Creates an empty `.env` first if the environment doesn't have one yet.
+    Edit {
+        /// Environment to edit (defaults to the currently active one)
+        env_name: Option<String>,
+    },
+
     /// Open Claude Code inside an environment's context (alias for `run <env> -- claude`)
     ///
     /// Sets `CVM_ENV=<env>` for that process only, so multiple isolated

@@ -25,9 +25,9 @@ history.
   MCP servers, and skills to `cvm.yaml`; teammates import it and get an
   identical setup in one command.
 - **Per-environment secrets in `.env`** — each environment can have its own
-  `.env` file for things like MCP server credentials. It's loaded into the
-  process on `use`/`run`/`open`, but `cvm export` only ever shares the
-  *names* of those variables, never their values.
+  `.env` file for things like MCP server credentials, editable with `cvm edit
+  <env>`. It's loaded into the process on `use`/`run`/`open`, but `cvm export`
+  only ever shares the *names* of those variables, never their values.
 - **Safe by construction** — export/import only ever touch `settings.json`
   (permissions + `mcpServers`), the `skills/` directory, and the *names* of
   `.env` variables. Auth tokens, credentials, and history files are never
@@ -223,12 +223,15 @@ Give it credentials an MCP server needs, without putting them in
 `settings.json` (and therefore never in `cvm.yaml` either):
 
 ```sh
-cat >> ~/.cvm/envs/work/.env <<'EOF'
-POSTGRES_PASSWORD=super-secret-value
-GITHUB_TOKEN=ghp_xxx
-EOF
+cvm edit work   # opens ~/.cvm/envs/work/.env in $VISUAL/$EDITOR, creating it if needed
+# POSTGRES_PASSWORD=super-secret-value
+# GITHUB_TOKEN=ghp_xxx
 cvm run work -- claude mcp list   # POSTGRES_PASSWORD/GITHUB_TOKEN are set for this process only
 ```
+
+`cvm edit` also works without a name if you have an environment active
+(`cvm use work` first), and respects `$VISUAL` before falling back to
+`$EDITOR` — the same convention `git commit`/`crontab -e` use.
 
 Check what's active:
 
@@ -306,6 +309,7 @@ cvm use project-backend-api
 | `cvm deactivate`                      | —            | Restores the default global Claude Code setup (needs shell integration).     |
 | `cvm current`                         | —            | Prints the name of the environment active in this shell.                     |
 | `cvm remove <env>`                    | `rm`         | Deletes an environment directory, with confirmation. `-y`/`--yes` to skip.   |
+| `cvm edit [env]`                      | —            | Opens `<env>`'s `.env` in `$VISUAL`/`$EDITOR` (defaults to active), creating it first if missing. |
 | `cvm run <env> -- <cmd>`              | —            | Runs `<cmd>` scoped to `<env>` without activating it globally.               |
 | `cvm open <env>`                      | —            | Runs `claude` scoped to `<env>`, tagging that process with `CVM_ENV=<env>`. Alias for `cvm run <env> -- claude`; safe to run several in parallel. |
 | `cvm export [env] [-o <file>]`        | —            | Exports an environment (defaults to active) to a YAML manifest. `.env` values are never included, only variable names. |

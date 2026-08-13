@@ -214,15 +214,18 @@ pub fn load_env_file(dir: &Path) -> Result<Vec<(String, String)>> {
     Ok(pairs)
 }
 
+/// Header comment written at the top of a fresh `.env` file, whether created
+/// by `write_env_file` or by `ensure_dotenv_file` for `cvm edit`.
+const DOTENV_HEADER: &str =
+    "# Local environment variables for this cvm environment (e.g. MCP server credentials).\n\
+     # Loaded into the process on `cvm use`/`activate`, `cvm run`, and `cvm open`.\n\
+     # Values are NEVER included in `cvm export` - only the variable names are shared.\n";
+
 /// Writes `vars` back to an environment directory's `.env` file, sorted by
 /// key for a stable diff.
 pub fn write_env_file(dir: &Path, vars: &BTreeMap<String, String>) -> Result<()> {
     let path = dir.join(DOTENV_FILE);
-    let mut out = String::from(
-        "# Local environment variables for this cvm environment (e.g. MCP server credentials).\n\
-         # Loaded into the process on `cvm use`/`activate`, `cvm run`, and `cvm open`.\n\
-         # Values are NEVER included in `cvm export` - only the variable names are shared.\n",
-    );
+    let mut out = String::from(DOTENV_HEADER);
     for (key, value) in vars {
         out.push_str(key);
         out.push('=');
@@ -250,6 +253,38 @@ fn unquote(value: &str) -> &str {
 /// shell's environment or each other.
 pub fn open_env(name: &str) -> Result<i32> {
     run_in_env(name, &["claude".to_string()])
+}
+
+/// Ensures `dir`'s `.env` file exists, creating it with the standard header
+/// (and no variables) if it doesn't. Returns its path either way.
+fn ensure_dotenv_file(dir: &Path) -> Result<PathBuf> {
+    let path = dir.join(DOTENV_FILE);
+    if !path.is_file() {
+        fs::write(&path, DOTENV_HEADER)
+            .with_context(|| format!("failed to create {}", path.display()))?;
+    }
+    Ok(path)
+}
+
+/// Opens `name`'s `.env` file in the user's editor (`$VISUAL`, falling back
+/// to `$EDITOR`), creating an empty one first if it doesn't exist yet.
+/// Returns the editor process's exit code.
+pub fn edit_env(name: &str) -> Result<i32> {
+    let dir = ensure_env_exists(name)?;
+    let path = ensure_dotenv_file(&dir)?;
+
+    let editor = env::var("VISUAL")
+        .or_else(|_| env::var("EDITOR"))
+        .context("no editor configured; set $EDITOR or $VISUAL to edit .env files")?;
+    let mut parts = editor.split_whitespace();
+    let program = parts.next().context("$EDITOR/$VISUAL is set but empty")?;
+
+    let status: ExitStatus = Command::new(program)
+        .args(parts)
+        .arg(&path)
+        .status()
+        .with_context(|| format!("failed to launch editor '{editor}'"))?;
+    Ok(status.code().unwrap_or(1))
 }
 
 #[cfg(test)]
@@ -333,5 +368,29 @@ mod tests {
 
         let loaded: BTreeMap<_, _> = load_env_file(dir.path()).unwrap().into_iter().collect();
         assert_eq!(loaded, vars);
+    }
+
+    #[test]
+    fn ensure_dotenv_file_creates_empty_file_with_header() {
+        let dir = tempfile::tempdir().unwrap();
+
+        let path = ensure_dotenv_file(dir.path()).unwrap();
+
+        assert_eq!(path, dir.path().join(DOTENV_FILE));
+        assert_eq!(fs::read_to_string(&path).unwrap(), DOTENV_HEADER);
+        assert_eq!(load_env_file(dir.path()).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn ensure_dotenv_file_leaves_existing_file_untouched() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(DOTENV_FILE), "GITHUB_TOKEN=ghp_example\n").unwrap();
+
+        let path = ensure_dotenv_file(dir.path()).unwrap();
+
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            "GITHUB_TOKEN=ghp_example\n"
+        );
     }
 }

@@ -65,6 +65,10 @@ fn run() -> Result<()> {
             let code = env::run_in_env(&env_name, &command)?;
             std::process::exit(code);
         }
+        Command::Edit { env_name } => {
+            let code = cmd_edit(env_name)?;
+            std::process::exit(code);
+        }
         Command::Open { env_name } => {
             let code = env::open_env(&env_name)?;
             std::process::exit(code);
@@ -161,6 +165,16 @@ fn cmd_remove(env_name: &str, yes: bool) -> Result<()> {
     env::remove_env(env_name)?;
     println!("{} environment '{}' removed", "✓".green(), env_name.bold());
     Ok(())
+}
+
+fn cmd_edit(env_name: Option<String>) -> Result<i32> {
+    let name = match env_name {
+        Some(n) => n,
+        None => env::active_env().context(
+            "no environment specified and none is active; pass a name or run `cvm use <env>` first",
+        )?,
+    };
+    env::edit_env(&name)
 }
 
 fn cmd_export(env_name: Option<String>, output: PathBuf) -> Result<()> {
