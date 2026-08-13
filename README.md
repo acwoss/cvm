@@ -69,6 +69,18 @@ cd cvm
 cargo install --path . --locked
 ```
 
+### Updating
+
+```sh
+cvm update
+```
+
+Checks GitHub Releases for a newer version and, if one exists, downloads
+the right asset for your platform and replaces the running binary in
+place — no need to re-run the install script. Requires `curl` and `tar` on
+`PATH` (the same requirement `install.sh` already has). If you installed
+via `cargo install`, re-run that command instead.
+
 ## Shell Integration Setup
 
 `cvm` is a compiled binary, so it cannot change the environment variables of
@@ -303,6 +315,7 @@ cvm use project-backend-api
 | Command                              | Aliases      | Description                                                                 |
 |---------------------------------------|--------------|-------------------------------------------------------------------------------|
 | `cvm init <shell>`                    | —            | Prints shell integration hooks for `bash`, `zsh`, `fish`, or `powershell`.    |
+| `cvm update`                          | —            | Checks GitHub Releases for a newer version and replaces the running binary in place. |
 | `cvm create <env> [--anonymous]`      | —            | Creates a new isolated environment at `~/.cvm/envs/<env>`, reusing global Claude Code credentials unless `--anonymous` is passed. |
 | `cvm list`                            | `ls`         | Lists all environments, highlighting the active one.                         |
 | `cvm use <env>`                       | `activate`   | Activates `<env>` in the current shell session (needs shell integration).    |

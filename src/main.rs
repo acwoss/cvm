@@ -2,6 +2,7 @@ mod cli;
 mod env;
 mod manifest;
 mod shell;
+mod update;
 
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -28,6 +29,7 @@ fn run() -> Result<()> {
         Command::Init { shell } => {
             print!("{}", shell::generate(shell));
         }
+        Command::Update => cmd_update()?,
         Command::Create {
             env_name,
             anonymous,
@@ -79,6 +81,27 @@ fn run() -> Result<()> {
         Command::ResolveDeactivate => cmd_resolve_deactivate(),
     }
 
+    Ok(())
+}
+
+fn cmd_update() -> Result<()> {
+    println!(
+        "Checking for updates (current: {})...",
+        update::current_version()
+    );
+    match update::run()? {
+        update::UpdateOutcome::AlreadyUpToDate { version } => {
+            println!("{} already up to date ({version})", "✓".green());
+        }
+        update::UpdateOutcome::Updated { from, to } => {
+            println!("{} updated cvm {from} -> {to}", "✓".green().bold());
+            println!(
+                "{}",
+                "Already-running shells keep using the old binary until you start a new one."
+                    .dimmed()
+            );
+        }
+    }
     Ok(())
 }
 

@@ -21,6 +21,12 @@ pub enum Command {
         shell: Shell,
     },
 
+    /// Check for a newer cvm release and install it in place
+    ///
+    /// Downloads the release asset for your platform from GitHub Releases
+    /// and replaces the running binary. Requires `curl` and `tar` on PATH.
+    Update,
+
     /// Create a new isolated environment
     ///
     /// By default, copies the global Claude Code credentials
