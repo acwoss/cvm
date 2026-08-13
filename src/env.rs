@@ -9,6 +9,12 @@ use anyhow::{bail, Context, Result};
 /// Name of an environment's local dotenv file, relative to its directory.
 const DOTENV_FILE: &str = ".env";
 
+/// Name of Claude Code's OAuth credentials file. Copied from the global
+/// config directory into a new environment on `cvm create` unless
+/// `--anonymous` is passed; never touched by `export`/`import` (see
+/// `manifest.rs`).
+const CREDENTIALS_FILE: &str = ".credentials.json";
+
 /// Env var pointing Claude Code at an isolated config directory.
 pub const CONFIG_DIR_VAR: &str = "CLAUDE_CONFIG_DIR";
 /// Env var identifying which cvm environment a process is running under.
@@ -24,6 +30,15 @@ pub fn cvm_home() -> Result<PathBuf> {
 
 pub fn envs_dir() -> Result<PathBuf> {
     Ok(cvm_home()?.join("envs"))
+}
+
+/// The global Claude Code config directory (`~/.claude`), regardless of any
+/// `CLAUDE_CONFIG_DIR` override currently in effect - this is where a new
+/// environment's credentials are copied from, not wherever the active
+/// environment happens to point.
+fn global_claude_dir() -> Result<PathBuf> {
+    let home = dirs::home_dir().context("could not determine the home directory")?;
+    Ok(home.join(".claude"))
 }
 
 pub fn env_dir(name: &str) -> Result<PathBuf> {
@@ -43,13 +58,37 @@ pub fn active_env() -> Option<String> {
     env::var(ACTIVE_ENV_VAR).ok().filter(|s| !s.is_empty())
 }
 
-pub fn create_env(name: &str) -> Result<PathBuf> {
+/// Creates a new, empty environment directory. Unless `anonymous` is set,
+/// also copies the global Claude Code credentials file into it (if one
+/// exists) so the new environment starts out already logged in. Returns the
+/// environment directory and whether credentials were copied.
+pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
     let dir = env_dir(name)?;
     if dir.exists() {
         bail!("environment '{name}' already exists at {}", dir.display());
     }
     fs::create_dir_all(&dir).with_context(|| format!("failed to create {}", dir.display()))?;
-    Ok(dir)
+
+    let credentials_copied = if anonymous {
+        false
+    } else {
+        copy_credentials(&global_claude_dir()?, &dir)?
+    };
+
+    Ok((dir, credentials_copied))
+}
+
+/// Copies `CREDENTIALS_FILE` from `source_claude_dir` into `env_dir`, if it
+/// exists there. Returns whether a copy happened.
+fn copy_credentials(source_claude_dir: &Path, env_dir: &Path) -> Result<bool> {
+    let source = source_claude_dir.join(CREDENTIALS_FILE);
+    if !source.is_file() {
+        return Ok(false);
+    }
+    let dest = env_dir.join(CREDENTIALS_FILE);
+    fs::copy(&source, &dest)
+        .with_context(|| format!("failed to copy {} to {}", source.display(), dest.display()))?;
+    Ok(true)
 }
 
 pub fn ensure_env_exists(name: &str) -> Result<PathBuf> {
@@ -232,6 +271,32 @@ mod tests {
         let vars = resolve_deactivate();
         assert!(vars.contains(&CONFIG_DIR_VAR.to_string()));
         assert!(vars.contains(&ACTIVE_ENV_VAR.to_string()));
+    }
+
+    #[test]
+    fn copies_credentials_when_present_in_source() {
+        let source = tempfile::tempdir().unwrap();
+        let dest = tempfile::tempdir().unwrap();
+        fs::write(source.path().join(CREDENTIALS_FILE), "{\"token\":\"abc\"}").unwrap();
+
+        let copied = copy_credentials(source.path(), dest.path()).unwrap();
+
+        assert!(copied);
+        assert_eq!(
+            fs::read_to_string(dest.path().join(CREDENTIALS_FILE)).unwrap(),
+            "{\"token\":\"abc\"}"
+        );
+    }
+
+    #[test]
+    fn skips_copying_when_no_global_credentials_exist() {
+        let source = tempfile::tempdir().unwrap();
+        let dest = tempfile::tempdir().unwrap();
+
+        let copied = copy_credentials(source.path(), dest.path()).unwrap();
+
+        assert!(!copied);
+        assert!(!dest.path().join(CREDENTIALS_FILE).exists());
     }
 
     #[test]

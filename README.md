@@ -17,6 +17,10 @@ history.
 - **Isolated environments** — each environment is its own directory under
   `~/.cvm/envs/<name>`, completely separate from your global `~/.claude`
   config and from every other environment.
+- **No repeated logins** — `cvm create` copies your global Claude Code
+  credentials into the new environment by default, so it starts out already
+  logged in. Pass `--anonymous` to skip that and get a completely empty
+  environment instead.
 - **Zero config drift between machines** — export an environment's settings,
   MCP servers, and skills to `cvm.yaml`; teammates import it and get an
   identical setup in one command.
@@ -196,6 +200,25 @@ cvm use work
 claude   # runs against ~/.cvm/envs/work instead of ~/.claude
 ```
 
+`cvm create` copies your global Claude Code credentials
+(`~/.claude/.credentials.json`) into the new environment if that file
+exists, so `claude` above doesn't prompt you to log in again. Everything
+else about the environment (settings, MCP servers, `.env`, history) still
+starts out empty and isolated. If you want a completely empty environment
+instead — no shared credentials at all — pass `--anonymous`:
+
+```sh
+cvm create sandbox --anonymous
+cvm use sandbox
+claude   # prompts for a fresh login
+```
+
+> **Note:** this only works on platforms where Claude Code stores its
+> credentials as a file in the config directory (Linux, Windows). On macOS,
+> Claude Code may store them in the system Keychain instead, in which case
+> there is nothing for `cvm create` to copy and you'll still need to log in
+> once per environment.
+
 Give it credentials an MCP server needs, without putting them in
 `settings.json` (and therefore never in `cvm.yaml` either):
 
@@ -277,7 +300,7 @@ cvm use project-backend-api
 | Command                              | Aliases      | Description                                                                 |
 |---------------------------------------|--------------|-------------------------------------------------------------------------------|
 | `cvm init <shell>`                    | —            | Prints shell integration hooks for `bash`, `zsh`, `fish`, or `powershell`.    |
-| `cvm create <env>`                    | —            | Creates a new isolated environment at `~/.cvm/envs/<env>`.                    |
+| `cvm create <env> [--anonymous]`      | —            | Creates a new isolated environment at `~/.cvm/envs/<env>`, reusing global Claude Code credentials unless `--anonymous` is passed. |
 | `cvm list`                            | `ls`         | Lists all environments, highlighting the active one.                         |
 | `cvm use <env>`                       | `activate`   | Activates `<env>` in the current shell session (needs shell integration).    |
 | `cvm deactivate`                      | —            | Restores the default global Claude Code setup (needs shell integration).     |

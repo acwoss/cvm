@@ -28,14 +28,33 @@ fn run() -> Result<()> {
         Command::Init { shell } => {
             print!("{}", shell::generate(shell));
         }
-        Command::Create { env_name } => {
-            let dir = env::create_env(&env_name)?;
+        Command::Create {
+            env_name,
+            anonymous,
+        } => {
+            let (dir, credentials_copied) = env::create_env(&env_name, anonymous)?;
             println!(
                 "{} environment '{}' created at {}",
                 "✓".green(),
                 env_name.bold(),
                 dir.display()
             );
+            if credentials_copied {
+                println!(
+                    "{}",
+                    "Reused global Claude Code credentials - no login needed.".dimmed()
+                );
+            } else if anonymous {
+                println!(
+                    "{}",
+                    "Created without credentials (--anonymous); log in separately.".dimmed()
+                );
+            } else {
+                println!(
+                    "{}",
+                    "No global Claude Code credentials found to reuse; log in when ready.".dimmed()
+                );
+            }
         }
         Command::List => cmd_list()?,
         Command::Use { env_name } => cmd_activation_hint(&env_name)?,
@@ -175,7 +194,7 @@ fn cmd_import(file: PathBuf, name: Option<String>) -> Result<()> {
 
     let dir = env::env_dir(&env_name)?;
     if !dir.exists() {
-        env::create_env(&env_name)?;
+        env::create_env(&env_name, false)?;
     }
     manifest::apply_manifest(&manifest, &dir)?;
 
