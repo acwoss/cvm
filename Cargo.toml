@@ -1,0 +1,35 @@
+[package]
+name = "cvm"
+version = "0.1.0"
+edition = "2021"
+description = "Claude Virtualenv Manager - isolate and share Claude Code configuration environments"
+license = "MIT"
+authors = ["cvm contributors"]
+repository = "https://github.com/acwoss/cvm"
+readme = "README.md"
+keywords = ["claude", "cli", "environment", "virtualenv"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "cvm"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+anyhow = "1"
+dirs = "5"
+colored = "2"
+dialoguer = "0.11"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
+panic = "abort"
