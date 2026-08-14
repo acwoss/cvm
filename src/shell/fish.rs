@@ -16,6 +16,10 @@ function cvm
                     set -gx $__cvm_parts[1] $__cvm_parts[2]
                 end
             end
+            if not set -q CVM_OLD_PATH
+                set -gx CVM_OLD_PATH $PATH
+            end
+            set -gx PATH "$CLAUDE_CONFIG_DIR/bin" $CVM_OLD_PATH
             if not functions -q __cvm_old_fish_prompt
                 functions -c fish_prompt __cvm_old_fish_prompt
             end
@@ -25,6 +29,10 @@ function cvm
             end
         case deactivate
             set -l __cvm_out (command cvm __resolve-deactivate); or return $status
+            if set -q CVM_OLD_PATH
+                set -gx PATH $CVM_OLD_PATH
+                set -e CVM_OLD_PATH
+            end
             for __cvm_line in $__cvm_out
                 if test -n "$__cvm_line"
                     set -e $__cvm_line

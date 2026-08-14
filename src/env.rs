@@ -6,6 +6,8 @@ use std::process::{Command, ExitStatus};
 
 use anyhow::{bail, Context, Result};
 
+use crate::shims::{env_bin_dir, write_env_shims};
+
 /// Name of an environment's local dotenv file, relative to its directory.
 const DOTENV_FILE: &str = ".env";
 
@@ -87,9 +89,13 @@ pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
 /// and a starter `.env` file.
 pub fn ensure_env_layout(dir: &Path) -> Result<()> {
     fs::create_dir_all(dir.join("skills"))?;
-    fs::create_dir_all(dir.join("bin"))?;
+    ensure_env_bin(dir)?;
     let _ = ensure_dotenv_file(dir)?;
     Ok(())
+}
+
+fn ensure_env_bin(dir: &Path) -> Result<()> {
+    write_env_shims(dir)
 }
 
 /// Copies `CREDENTIALS_FILE` from `source_claude_dir` into `env_dir`, if it
@@ -143,6 +149,7 @@ pub fn remove_env(name: &str) -> Result<()> {
 /// anything the `.env` file happens to define under the same name.
 pub fn resolve_activate(name: &str) -> Result<Vec<(String, String)>> {
     let dir = ensure_env_exists(name)?;
+    ensure_env_bin(&dir)?;
     let dir_str = dir
         .to_str()
         .with_context(|| format!("environment path is not valid UTF-8: {}", dir.display()))?
@@ -172,15 +179,21 @@ pub fn resolve_deactivate() -> Vec<String> {
 /// never touching the parent shell's environment.
 pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
     let dir = ensure_env_exists(name)?;
+    ensure_env_bin(&dir)?;
     let Some((program, args)) = command.split_first() else {
         bail!("no command given to run");
     };
     let env_vars = load_env_file(&dir)?;
-    let status: ExitStatus = Command::new(program)
-        .args(args)
+    let mut paths = vec![env_bin_dir(&dir)];
+    paths.extend(env::split_paths(&env::var_os("PATH").unwrap_or_default()));
+    let path = env::join_paths(paths).context("failed to prepend environment bin to PATH")?;
+    let mut cmd = Command::new(program);
+    cmd.args(args)
         .envs(env_vars)
         .env(CONFIG_DIR_VAR, &dir)
         .env(ACTIVE_ENV_VAR, name)
+        .env("PATH", path);
+    let status: ExitStatus = cmd
         .status()
         .with_context(|| format!("failed to execute '{program}'"))?;
     Ok(status.code().unwrap_or(1))
@@ -422,12 +435,16 @@ mod tests {
     }
 
     #[test]
-    fn ensure_env_layout_creates_skills_bin_and_dotenv() {
+    fn ensure_env_layout_creates_skills_bin_dotenv_and_shims() {
         let dir = tempfile::tempdir().unwrap();
         ensure_env_layout(dir.path()).unwrap();
         assert!(dir.path().join("skills").is_dir());
         assert!(dir.path().join("bin").is_dir());
         assert!(dir.path().join(".env").is_file());
+        assert!(dir.path().join("bin/claude").is_file());
+        assert!(dir.path().join("bin/skills").is_file());
+        assert!(dir.path().join("bin/claude.cmd").is_file());
+        assert!(dir.path().join("bin/skills.cmd").is_file());
     }
 
     #[test]

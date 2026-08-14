@@ -28,6 +28,11 @@ function cvm {
                     Set-Item -Path "Env:$($Matches[1])" -Value $Matches[2]
                 }
             }
+            if (-not (Test-Path Env:CVM_OLD_PATH)) {
+                $env:CVM_OLD_PATH = $env:Path
+            }
+            $env:Path = (Join-Path $env:CLAUDE_CONFIG_DIR 'bin') +
+                [IO.Path]::PathSeparator + $env:CVM_OLD_PATH
             if (-not (Test-Path variable:global:CVM_OLD_PROMPT)) {
                 $global:CVM_OLD_PROMPT = (Get-Content function:prompt).ToString()
             }
@@ -38,6 +43,10 @@ function cvm {
         'deactivate' {
             $out = & $cvmBin __resolve-deactivate
             if ($LASTEXITCODE -ne 0) { return }
+            if (Test-Path Env:CVM_OLD_PATH) {
+                $env:Path = $env:CVM_OLD_PATH
+                Remove-Item Env:CVM_OLD_PATH
+            }
             if (Test-Path variable:global:CVM_OLD_PROMPT) {
                 Set-Item function:global:prompt ([scriptblock]::Create($global:CVM_OLD_PROMPT))
                 Remove-Variable CVM_OLD_PROMPT -Scope Global

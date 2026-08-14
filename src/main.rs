@@ -2,6 +2,7 @@ mod cli;
 mod env;
 mod manifest;
 mod shell;
+mod shims;
 mod update;
 
 use std::io::{self, Write};

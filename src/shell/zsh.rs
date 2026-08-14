@@ -15,6 +15,10 @@ cvm() {
       while IFS='=' read -r __cvm_key __cvm_val; do
         [ -n "$__cvm_key" ] && export "$__cvm_key=$__cvm_val"
       done <<< "$__cvm_out"
+      if [ -z "${CVM_OLD_PATH+x}" ]; then
+        export CVM_OLD_PATH="$PATH"
+      fi
+      export PATH="${CLAUDE_CONFIG_DIR}/bin:${CVM_OLD_PATH}"
       if [ -z "${CVM_OLD_PS1+x}" ]; then
         CVM_OLD_PS1="${PS1-}"
         export CVM_OLD_PS1
@@ -25,6 +29,10 @@ cvm() {
     deactivate)
       local __cvm_out
       __cvm_out="$(command cvm __resolve-deactivate)" || return $?
+      if [ -n "${CVM_OLD_PATH+x}" ]; then
+        export PATH="$CVM_OLD_PATH"
+        unset CVM_OLD_PATH
+      fi
       if [ -n "${CVM_OLD_PS1+x}" ]; then
         PS1="$CVM_OLD_PS1"
         export PS1

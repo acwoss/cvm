@@ -23,3 +23,18 @@ pub fn generate(shell: Shell) -> &'static str {
         Shell::Powershell => powershell::SCRIPT,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_shell_hooks_manage_env_path() {
+        for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Powershell] {
+            let script = generate(shell);
+            assert!(script.contains("CVM_OLD_PATH"));
+            assert!(script.contains("CLAUDE_CONFIG_DIR"));
+            assert!(script.contains("bin"));
+        }
+    }
+}

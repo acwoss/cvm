@@ -36,6 +36,10 @@ history.
 - **Ad hoc, no-commitment runs** — `cvm run <env> -- claude` runs a single
   command inside an environment's context without switching your whole
   shell session.
+- **Environment-local command shims** — every environment gets `bin/claude`
+  and `bin/skills`. Activating an environment or using `cvm run` puts that
+  directory first on `PATH`, so both commands automatically use the selected
+  Claude config. The skills shim invokes `npx --yes skills`.
 - **Parallel Claude Code instances** — `cvm open <env>` launches Claude Code
   scoped to `<env>`, tagging that single process with `CVM_ENV=<env>` so you
   can run several isolated instances side by side (e.g. one per client or
@@ -106,8 +110,10 @@ function first — `use`, `activate`, and `deactivate` are intercepted, and
 everything else is passed straight through to the compiled binary.
 
 The shell hook prefixes the prompt with the active environment name, such as
-`(work)`, and restores the previous prompt on `cvm deactivate`. After upgrading
-`cvm`, re-run `cvm init` for your shell to install the latest hook.
+`(work)`, saves the original `PATH` in `CVM_OLD_PATH`, and prepends the active
+environment's `bin/` directory. `cvm deactivate` restores both the previous
+prompt and `PATH`. After upgrading `cvm`, re-run `cvm init` for your shell to
+install the latest hook.
 
 If you run the raw `cvm use`/`cvm deactivate` binary without this hook
 installed, `cvm` prints a warning explaining that shell integration isn't
@@ -213,7 +219,8 @@ Create and activate an environment:
 ```sh
 cvm create work
 cvm use work
-claude   # runs against ~/.cvm/envs/work instead of ~/.claude
+claude   # env-local shim runs against ~/.cvm/envs/work instead of ~/.claude
+skills   # env-local shim runs npx --yes skills with the same environment
 ```
 
 To create an environment and open Claude Code in it right away:
@@ -343,14 +350,16 @@ cvm use project-backend-api
 ### Environment variables
 
 Claude Code reads `CLAUDE_CONFIG_DIR` to decide where its config lives
-(defaulting to `~/.claude`). `cvm` never patches Claude Code itself — it
-only ever sets two environment variables:
+(defaulting to `~/.claude`). `cvm` never patches Claude Code itself. It sets
+these environment variables:
 
 - `CLAUDE_CONFIG_DIR` — points at `~/.cvm/envs/<name>` while `<name>` is
   active.
 - `CVM_ENV` — the name of the environment a process is running under, used
   by `cvm current`, `cvm list`, and available to any script (like a
   statusline) that wants to know which environment is active.
+- `CVM_OLD_PATH` — shell-hook backup used only while an environment is
+  activated, so `cvm deactivate` can restore the original `PATH`.
 
 Because a process can't mutate its parent shell's environment, `use`,
 `activate`, and `deactivate` are implemented as a shell function (installed
@@ -361,10 +370,11 @@ loads the environment's `.env` file, so its variables get exported (and
 later unset) right alongside `CLAUDE_CONFIG_DIR`/`CVM_ENV`. `cvm run` and
 `cvm open` sidestep the shell function entirely: they spawn the target
 command directly as a child process with `.env`'s variables plus
-`CLAUDE_CONFIG_DIR`/`CVM_ENV` already set, so they work with or without
-shell integration installed, and multiple `cvm open` processes can run in
-parallel without interfering with each other or with whatever environment
-(if any) is active in the parent shell.
+`CLAUDE_CONFIG_DIR`/`CVM_ENV` already set and the environment's `bin/`
+prepended to its `PATH`, so they work with or without shell integration
+installed. Multiple `cvm open` processes can run in parallel without
+interfering with each other or with whatever environment (if any) is active
+in the parent shell.
 
 ### Directory structure
 
@@ -375,7 +385,7 @@ parallel without interfering with each other or with whatever environment
     ├── work/             # = $CLAUDE_CONFIG_DIR when "work" is active
     │   ├── .env          # starter file for MCP credentials & other local secrets
     │   ├── skills/       # custom skills (created on `cvm create`)
-    │   ├── bin/          # env-local executables (created on `cvm create`)
+    │   ├── bin/          # claude/skills shims, first on PATH while active
     │   ├── settings.json
     │   └── ...           # anything else Claude Code itself creates here
     └── personal/
@@ -384,6 +394,12 @@ parallel without interfering with each other or with whatever environment
 
 Each environment directory *is* the `CLAUDE_CONFIG_DIR` Claude Code will use
 — `cvm` doesn't copy or mirror files into a separate location.
+
+The generated `claude` shim removes its own `bin/` directory from `PATH`
+before resolving the real Claude executable, which prevents recursion. The
+`skills` shim does the same environment setup and delegates to `npx --yes
+skills`. Existing environments receive missing or stale shims lazily the next
+time they are activated or used with `cvm run`/`cvm open`.
 
 ### Manifest handling
 
