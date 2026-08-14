@@ -4,3 +4,5 @@
 
 .worktrees/
 .superpowers/
+.claude/
+.dev/

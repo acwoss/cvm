@@ -516,6 +516,8 @@ cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a pull request.
+
 ## License
 
 [MIT](LICENSE)
