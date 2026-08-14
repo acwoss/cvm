@@ -23,19 +23,26 @@ function cvm {
             }
             $out = & $cvmBin __resolve-activate $CvmArgs[1]
             if ($LASTEXITCODE -ne 0) { return }
-            foreach ($line in $out) {
-                if ($line -match '^([^=]+)=(.*)$') {
-                    Set-Item -Path "Env:$($Matches[1])" -Value $Matches[2]
-                }
-            }
             if (-not (Test-Path Env:CVM_OLD_PATH)) {
                 $env:CVM_OLD_PATH = $env:Path
             }
-            $env:Path = (Join-Path $env:CLAUDE_CONFIG_DIR 'bin') +
-                [IO.Path]::PathSeparator + $env:CVM_OLD_PATH
             if (-not (Test-Path variable:global:CVM_OLD_PROMPT)) {
                 $global:CVM_OLD_PROMPT = (Get-Content function:prompt).ToString()
             }
+            foreach ($line in $out) {
+                if ($line -match '^([^=]+)=(.*)$') {
+                    $key = $Matches[1]
+                    $reserved = @(
+                        'PATH', 'PS1', 'CVM_OLD_PATH', 'CVM_OLD_PS1',
+                        'CVM_OLD_PROMPT', 'CVM_HOME', 'CVM_AUTO'
+                    )
+                    if ($key -notin $reserved) {
+                        Set-Item -Path "Env:$key" -Value $Matches[2]
+                    }
+                }
+            }
+            $env:Path = (Join-Path $env:CLAUDE_CONFIG_DIR 'bin') +
+                [IO.Path]::PathSeparator + $env:CVM_OLD_PATH
             function global:prompt {
                 "($env:CVM_ENV) " + (& ([scriptblock]::Create($global:CVM_OLD_PROMPT)))
             }

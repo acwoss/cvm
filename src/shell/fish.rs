@@ -10,19 +10,23 @@ function cvm
                 return 1
             end
             set -l __cvm_out (command cvm __resolve-activate $argv[2]); or return $status
+            if not set -q CVM_OLD_PATH
+                set -gx CVM_OLD_PATH $PATH
+            end
+            if not functions -q __cvm_old_fish_prompt
+                functions -c fish_prompt __cvm_old_fish_prompt
+            end
             for __cvm_line in $__cvm_out
                 set -l __cvm_parts (string split -m 1 '=' -- $__cvm_line)
+                switch $__cvm_parts[1]
+                    case PATH PS1 CVM_OLD_PATH CVM_OLD_PS1 CVM_OLD_PROMPT CVM_HOME CVM_AUTO
+                        continue
+                end
                 if test -n "$__cvm_parts[1]"
                     set -gx $__cvm_parts[1] $__cvm_parts[2]
                 end
             end
-            if not set -q CVM_OLD_PATH
-                set -gx CVM_OLD_PATH $PATH
-            end
             set -gx PATH "$CLAUDE_CONFIG_DIR/bin" $CVM_OLD_PATH
-            if not functions -q __cvm_old_fish_prompt
-                functions -c fish_prompt __cvm_old_fish_prompt
-            end
             function fish_prompt
                 printf '(%s) ' "$CVM_ENV"
                 __cvm_old_fish_prompt

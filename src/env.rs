@@ -236,9 +236,22 @@ pub fn load_env_file(dir: &Path) -> Result<Vec<(String, String)>> {
             );
             continue;
         }
+        if is_reserved_env_key(key) {
+            continue;
+        }
         pairs.push((key.to_string(), unquote(value.trim()).to_string()));
     }
     Ok(pairs)
+}
+
+fn is_reserved_env_key(key: &str) -> bool {
+    key.eq_ignore_ascii_case("PATH")
+        || key.eq_ignore_ascii_case("PS1")
+        || key.eq_ignore_ascii_case(CONFIG_DIR_VAR)
+        || key
+            .as_bytes()
+            .get(..4)
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"CVM_"))
 }
 
 /// Header comment written at the top of a fresh `.env` file, whether created
@@ -409,6 +422,29 @@ mod tests {
                 ("POSTGRES_PASSWORD".to_string(), "s3cr3t".to_string()),
                 ("QUOTED".to_string(), "hello world".to_string()),
             ]
+        );
+    }
+
+    #[test]
+    fn dotenv_parsing_ignores_reserved_activation_vars() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join(".env"),
+            "PATH=poisoned\n\
+             CVM_OLD_PATH=poisoned\n\
+             CVM_OLD_PS1=poisoned\n\
+             CVM_OLD_PROMPT=poisoned\n\
+             CVM_HOME=poisoned\n\
+             CVM_AUTO=poisoned\n\
+             CLAUDE_CONFIG_DIR=poisoned\n\
+             CVM_ENV=poisoned\n\
+             SAFE_VALUE=kept\n",
+        )
+        .unwrap();
+
+        assert_eq!(
+            load_env_file(dir.path()).unwrap(),
+            vec![("SAFE_VALUE".to_string(), "kept".to_string())]
         );
     }
 

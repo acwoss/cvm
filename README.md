@@ -28,6 +28,8 @@ history.
   `.env` file for things like MCP server credentials, editable with `cvm edit
   <env>`. It's loaded into the process on `use`/`run`/`open`, but `cvm export`
   only ever shares the *names* of those variables, never their values.
+  Activation-owned keys such as `PATH`, `CLAUDE_CONFIG_DIR`, and the `CVM_*`
+  namespace are ignored so an environment cannot corrupt activation state.
 - **Safe by construction** — export/import only ever touch `settings.json`
   (permissions + `mcpServers`), the `skills/` directory, and the *names* of
   `.env` variables. Auth tokens, credentials, and history files are never

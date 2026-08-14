@@ -11,18 +11,23 @@ cvm() {
       fi
       local __cvm_out
       __cvm_out="$(command cvm __resolve-activate "$2")" || return $?
-      local __cvm_key __cvm_val
-      while IFS='=' read -r __cvm_key __cvm_val; do
-        [ -n "$__cvm_key" ] && export "$__cvm_key=$__cvm_val"
-      done <<< "$__cvm_out"
       if [ -z "${CVM_OLD_PATH+x}" ]; then
         export CVM_OLD_PATH="$PATH"
       fi
-      export PATH="${CLAUDE_CONFIG_DIR}/bin:${CVM_OLD_PATH}"
       if [ -z "${CVM_OLD_PS1+x}" ]; then
         CVM_OLD_PS1="${PS1-}"
         export CVM_OLD_PS1
       fi
+      local __cvm_key __cvm_val
+      while IFS='=' read -r __cvm_key __cvm_val; do
+        case "$__cvm_key" in
+          PATH|PS1|CVM_OLD_PATH|CVM_OLD_PS1|CVM_OLD_PROMPT|CVM_HOME|CVM_AUTO)
+            continue
+            ;;
+        esac
+        [ -n "$__cvm_key" ] && export "$__cvm_key=$__cvm_val"
+      done <<< "$__cvm_out"
+      export PATH="${CLAUDE_CONFIG_DIR}/bin:${CVM_OLD_PATH}"
       PS1="(${CVM_ENV}) ${CVM_OLD_PS1}"
       export PS1
       ;;
