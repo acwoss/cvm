@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bring Python-venv ergonomics to cvm — eager env layout, shell prompt decoration, `bin/` on PATH with shims, `--inherit` on create, and `.cvm-env` auto-activate — without adding `cvm skill add`.
+**Goal:** Bring Python-venv ergonomics to cvm — eager env layout, shell prompt decoration, `bin/` on PATH with shims, `--inherit` on create, and `.cvm` auto-activate — without adding `cvm skill add`.
 
-**Architecture:** Rust owns filesystem layout, shim generation, inherit logic, and `run_in_env` PATH. Shell hooks (`cvm init`) own prompt decoration, PATH prepend/restore, and `.cvm-env` auto-activation, because those need access to the live shell prompt/`cd` and careful restore semantics that the current KEY=VALUE activate protocol cannot express alone.
+**Architecture:** Rust owns filesystem layout, shim generation, inherit logic, and `run_in_env` PATH. Shell hooks (`cvm init`) own prompt decoration, PATH prepend/restore, and `.cvm` auto-activation, because those need access to the live shell prompt/`cd` and careful restore semantics that the current KEY=VALUE activate protocol cannot express alone.
 
 **Tech Stack:** Rust (`clap`, existing `env`/`shell` modules), bash/zsh/fish/PowerShell hooks, Unix shell shims + Windows `.cmd` shims.
 
@@ -33,7 +33,7 @@
 | Shims | `claude` and `skills` (+ `.cmd` on Windows); derive env dir from shim location; exec real binary from PATH with env `bin` removed |
 | `skills` shim | `npx --yes skills "$@"` (or real `skills` if on cleaned PATH) — not a new cvm subcommand |
 | Inherit flag | `cvm create <env> --inherit`: symlink each `~/.claude/skills/*` into env `skills/` (copy fallback); **copy** `settings.json` if present |
-| Auto-activate | `.cvm-env` (first non-empty, non-`#` line = env name); set `CVM_AUTO=1` only for auto path; manual `cvm use` clears `CVM_AUTO`; leave directory tree → deactivate only if `CVM_AUTO=1` |
+| Auto-activate | `.cvm` (first non-empty, non-`#` line = env name); set `CVM_AUTO=1` only for auto path; manual `cvm use` clears `CVM_AUTO`; leave directory tree → deactivate only if `CVM_AUTO=1` |
 
 ```mermaid
 flowchart TD
@@ -45,7 +45,7 @@ flowchart TD
   use[cvm use] --> export[CLAUDE_CONFIG_DIR CVM_ENV dotenv]
   use --> path["PATH = env/bin + PATH"]
   use --> prompt["prompt = (name) + old"]
-  cdHook[cd finds .cvm-env] --> auto[auto use with CVM_AUTO]
+  cdHook[cd finds .cvm] --> auto[auto use with CVM_AUTO]
 ```
 
 ## File map
@@ -415,7 +415,7 @@ EOF
 
 ---
 
-### Task 5: Auto-activate from `.cvm-env`
+### Task 5: Auto-activate from `.cvm`
 
 **Files:**
 - Modify: all four `src/shell/*.rs`
@@ -424,9 +424,9 @@ EOF
 
 **Interfaces:**
 - Consumes: existing hook `use`/`deactivate` branches; `CVM_ENV`
-- Produces: `__cvm_auto_check` helper; `CVM_AUTO`, `CVM_AUTO_ROOT` (directory where `.cvm-env` was found); manual `use` clears `CVM_AUTO`
+- Produces: `__cvm_auto_check` helper; `CVM_AUTO`, `CVM_AUTO_ROOT` (directory where `.cvm` was found); manual `use` clears `CVM_AUTO`
 
-- [ ] **Step 1: Define `.cvm-env` format in README** — single env name, `#` comments allowed.
+- [ ] **Step 1: Define `.cvm` format in README** — single env name, `#` comments allowed.
 
 - [ ] **Step 2: Bash helper**
 
@@ -436,9 +436,9 @@ __cvm_auto_check() {
   CVM_AUTO_LAST_PWD=$PWD
   local dir="$PWD" found="" name=""
   while [ -n "$dir" ]; do
-    if [ -f "$dir/.cvm-env" ]; then
+    if [ -f "$dir/.cvm" ]; then
       found="$dir"
-      name=$(grep -v '^[[:space:]]*#' "$dir/.cvm-env" | sed '/^[[:space:]]*$/d' | head -n1 | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      name=$(grep -v '^[[:space:]]*#' "$dir/.cvm" | sed '/^[[:space:]]*$/d' | head -n1 | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
       break
     fi
     [ "$dir" = "/" ] && break
@@ -467,7 +467,7 @@ Wire into `PROMPT_COMMAND` (bash) carefully: append without clobbering user `PRO
 
 - [ ] **Step 6: PowerShell** — invoke from the decorated `prompt` function (or `Set-PSReadLineKeyHandler` is overkill); track last pwd in `$global:CVM_AUTO_LAST_PWD`.
 
-- [ ] **Step 7: README** — `.cvm-env` example + optional direnv snippet:
+- [ ] **Step 7: README** — `.cvm` example + optional direnv snippet:
 
 ```sh
 # .envrc (direnv alternative)
@@ -476,22 +476,22 @@ eval "$(cvm __resolve-activate myenv | sed 's/^/export /')"
 
 (Exact direnv snippet should match activate output format.)
 
-- [ ] **Step 8: Manual test checklist** (no automated shell-hook tests in-repo): create env, write `.cvm-env`, open new shell with init, `cd` in/out, manual `cvm use` then `cd` out (must stay active).
+- [ ] **Step 8: Manual test checklist** (no automated shell-hook tests in-repo): create env, write `.cvm`, open new shell with init, `cd` in/out, manual `cvm use` then `cd` out (must stay active).
 
 - [ ] **Step 9: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'
-feat(cvm): auto-activate environments from .cvm-env
+feat(cvm): auto-activate environments from .cvm
 
 What:
-Shell integration detects .cvm-env on cd and activates that environment; leaving auto-deactivates only auto sessions.
+Shell integration detects .cvm on cd and activates that environment; leaving auto-deactivates only auto sessions.
 
 Why:
 Project-correlated Claude configs should activate like direnv/venv without a manual cvm use every time.
 
 How:
-Add per-shell cd/prompt hooks that read .cvm-env, call cvm use, and track CVM_AUTO for safe deactivate.
+Add per-shell cd/prompt hooks that read .cvm, call cvm use, and track CVM_AUTO for safe deactivate.
 EOF
 )"
 ```
@@ -509,7 +509,7 @@ After all tasks:
    - `eval "$(cvm init bash)"` → `cvm use demo` → prompt shows `(demo)`; `which claude` prefers env bin; `echo $PATH` starts with env bin
    - `cvm deactivate` → prompt and PATH restored
    - `cvm create demo2 --inherit` → linked/copied skills if global has any
-   - `echo demo > /tmp/proj/.cvm-env` → `cd /tmp/proj` auto-activates; `cd /` auto-deactivates; `cvm use demo` then `cd /` stays active
+   - `echo demo > /tmp/proj/.cvm` → `cd /tmp/proj` auto-activates; `cd /` auto-deactivates; `cvm use demo` then `cd /` stays active
 
 ## Spec coverage check
 
@@ -519,11 +519,11 @@ After all tasks:
 | Prompt `(env)` | Task 2 |
 | `bin/` + shims + PATH | Task 3 |
 | `--inherit` | Task 4 |
-| `.cvm-env` auto-activate | Task 5 |
+| `.cvm` auto-activate | Task 5 |
 | No `cvm skill add` | Honored globally |
 
 ## Placeholder / consistency self-review
 
-- No TBD left for naming: `--inherit`, `CVM_OLD_PATH`, `CVM_OLD_PS1`, `CVM_AUTO`, `.cvm-env`.
+- No TBD left for naming: `--inherit`, `CVM_OLD_PATH`, `CVM_OLD_PS1`, `CVM_AUTO`, `.cvm`.
 - `create_env` signature grows an `inherit: bool` in Task 4; update all call sites (`main` create, `import` path that calls `create_env(..., false)` stays `false` for inherit unless we later add import flag — **keep import at `inherit: false`**).
 - Shell hook growth is intentional; keep helpers named `__cvm_*` to avoid collisions.
