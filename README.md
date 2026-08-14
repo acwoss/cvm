@@ -49,6 +49,10 @@ history.
   can run several isolated instances side by side (e.g. one per client or
   project) without them stepping on each other or on your shell.
 - **Cross-shell** — bash, zsh, fish, and PowerShell are all first-class.
+- **Lifecycle hooks** — drop executable scripts in `~/.cvm/hooks/` (e.g.
+  `post-create`, `pre-activate`, `post-deactivate`) and `cvm` runs them
+  automatically for every environment. `pre-*` hooks can abort the
+  operation by exiting non-zero; `post-*` hooks only ever print a warning.
 
 ## Installation
 
@@ -470,6 +474,39 @@ time they are activated or used with `cvm run`/`cvm open`.
 Any other keys already present in an environment's `settings.json` (or
 values already set in `.env`) are left untouched on import — `cvm` only
 ever merges the fields it manages.
+
+### Lifecycle hooks
+
+Drop an executable script per event into `~/.cvm/hooks/` and `cvm` runs it
+automatically, for every environment — no configuration file needed:
+
+| Event             | Runs                                                   | A failing hook (non-zero exit)... |
+|-------------------|---------------------------------------------------------|--------------------------------------|
+| `post-create`     | after `cvm create` finishes setting up the environment  | only prints a warning                |
+| `pre-activate`    | before `cvm use`/`activate` exports its variables        | aborts the activation                |
+| `post-activate`   | after `cvm use`/`activate` exports its variables          | only prints a warning                |
+| `pre-deactivate`  | before `cvm deactivate` unsets its variables              | aborts the deactivation              |
+| `post-deactivate` | after `cvm deactivate` unsets its variables                | only prints a warning                |
+| `pre-remove`      | before `cvm remove` deletes the environment directory      | aborts the removal                   |
+| `post-remove`     | after `cvm remove` deletes the environment directory        | only prints a warning                |
+
+Each hook receives which event fired, plus the environment's name and
+directory, as environment variables:
+
+- `CVM_HOOK_EVENT` — the event name (e.g. `post-create`)
+- `CVM_ENV` — the environment's name
+- `CVM_ENV_PATH` — the environment's absolute directory (may no longer exist
+  by the time `post-remove` runs)
+
+On Unix, a hook file needs to be executable (`chmod +x`) and can use any
+shebang; a present-but-non-executable hook is skipped with a warning rather
+than blocking anything. On Windows, hooks use a `.cmd` extension (e.g.
+`post-create.cmd`), matching the convention already used for the `bin/`
+shims.
+
+Hooks are global and local to your machine — they are never included in
+`cvm export`/`cvm import`, so importing a teammate's `cvm.yaml` never runs
+code you didn't write yourself.
 
 ## Showing the Active Environment in Your Statusline
 
