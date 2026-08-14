@@ -261,7 +261,10 @@ pub fn list_envs() -> Result<Vec<String>> {
 
 pub fn remove_env(name: &str) -> Result<()> {
     let dir = ensure_env_exists(name)?;
+    let hooks_dir = hooks::hooks_dir()?;
+    hooks::run_pre_hook(&hooks_dir, "pre-remove", name, &dir)?;
     fs::remove_dir_all(&dir).with_context(|| format!("failed to remove {}", dir.display()))?;
+    hooks::run_post_hook(&hooks_dir, "post-remove", name, &dir);
     Ok(())
 }
 
@@ -688,5 +691,63 @@ mod tests {
             fs::read_to_string(&path).unwrap(),
             "GITHUB_TOKEN=ghp_example\n"
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn remove_env_runs_pre_and_post_remove_hooks() {
+        with_temp_home(|home| {
+            let _exec_guard = crate::hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let marker = home.join("hook-log.txt");
+
+            let pre_hook = hooks_dir.join("pre-remove");
+            fs::write(
+                &pre_hook,
+                format!("#!/bin/sh\necho \"pre $CVM_ENV\" >> {}\n", marker.display()),
+            )
+            .unwrap();
+            let post_hook = hooks_dir.join("post-remove");
+            fs::write(
+                &post_hook,
+                format!(
+                    "#!/bin/sh\necho \"post $CVM_ENV\" >> {}\n",
+                    marker.display()
+                ),
+            )
+            .unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&pre_hook, fs::Permissions::from_mode(0o755)).unwrap();
+            fs::set_permissions(&post_hook, fs::Permissions::from_mode(0o755)).unwrap();
+
+            create_env("work", true, false).unwrap();
+            remove_env("work").unwrap();
+
+            let contents = fs::read_to_string(&marker).unwrap();
+            assert_eq!(contents, "pre work\npost work\n");
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn remove_env_aborts_when_pre_remove_hook_fails() {
+        with_temp_home(|home| {
+            let _exec_guard = crate::hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let pre_hook = hooks_dir.join("pre-remove");
+            fs::write(&pre_hook, "#!/bin/sh\nexit 1\n").unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&pre_hook, fs::Permissions::from_mode(0o755)).unwrap();
+
+            let (dir, _, _) = create_env("work", true, false).unwrap();
+
+            assert!(remove_env("work").is_err());
+            assert!(
+                dir.is_dir(),
+                "environment must not be deleted when pre-remove fails"
+            );
+        });
     }
 }

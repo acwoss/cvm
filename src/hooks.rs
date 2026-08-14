@@ -22,13 +22,6 @@ fn hook_path(hooks_dir: &Path, event: &str) -> PathBuf {
 
 /// Runs `event`'s hook if present in `hooks_dir`, propagating any failure.
 /// For `pre-*` events: a failing hook must abort the operation in progress.
-///
-/// Only the unit tests below call this so far - the `pre-*` events are wired
-/// into `remove_env`/`resolve_activate`/`resolve_deactivate` by the follow-up
-/// lifecycle-hooks work. The expectation is scoped to non-test builds (the
-/// tests do exercise it) and will itself start failing the build once a real
-/// caller lands, so it can't outlive its purpose.
-#[cfg_attr(not(test), expect(dead_code))]
 pub fn run_pre_hook(hooks_dir: &Path, event: &str, env_name: &str, env_dir: &Path) -> Result<()> {
     execute_hook(hooks_dir, event, env_name, env_dir)
 }
