@@ -102,7 +102,7 @@ fn run() -> Result<()> {
         Command::Export { env_name, output } => cmd_export(env_name, output)?,
         Command::Import { file, name } => cmd_import(file, name)?,
         Command::ResolveActivate { env_name } => cmd_resolve_activate(&env_name)?,
-        Command::ResolveDeactivate => cmd_resolve_deactivate(),
+        Command::ResolveDeactivate => cmd_resolve_deactivate()?,
     }
 
     Ok(())
@@ -283,8 +283,9 @@ fn cmd_resolve_activate(env_name: &str) -> Result<()> {
     Ok(())
 }
 
-fn cmd_resolve_deactivate() {
-    for var in env::resolve_deactivate() {
+fn cmd_resolve_deactivate() -> Result<()> {
+    for var in env::resolve_deactivate()? {
         println!("{var}");
     }
+    Ok(())
 }

@@ -67,7 +67,10 @@ fn execute_hook(hooks_dir: &Path, event: &str, env_name: &str, env_dir: &Path) -
 
     cmd.env("CVM_HOOK_EVENT", event)
         .env("CVM_ENV", env_name)
-        .env("CVM_ENV_PATH", env_dir);
+        .env("CVM_ENV_PATH", env_dir)
+        // Prevent hook stdout from leaking into the __resolve-activate/__resolve-deactivate
+        // parsed KEY=VALUE stream that the shell wrapper captures via command substitution.
+        .stdout(std::process::Stdio::null());
 
     let status = cmd
         .status()

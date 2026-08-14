@@ -274,6 +274,8 @@ pub fn remove_env(name: &str) -> Result<()> {
 /// anything the `.env` file happens to define under the same name.
 pub fn resolve_activate(name: &str) -> Result<Vec<(String, String)>> {
     let dir = ensure_env_exists(name)?;
+    let hooks_dir = hooks::hooks_dir()?;
+    hooks::run_pre_hook(&hooks_dir, "pre-activate", name, &dir)?;
     ensure_env_bin(&dir)?;
     let dir_str = dir
         .to_str()
@@ -282,21 +284,25 @@ pub fn resolve_activate(name: &str) -> Result<Vec<(String, String)>> {
     let mut pairs = load_env_file(&dir)?;
     pairs.push((CONFIG_DIR_VAR.to_string(), dir_str));
     pairs.push((ACTIVE_ENV_VAR.to_string(), name.to_string()));
+    hooks::run_post_hook(&hooks_dir, "post-activate", name, &dir);
     Ok(pairs)
 }
 
 /// Variable names the shell hook should unset to deactivate, including any
 /// variables loaded from the currently active environment's `.env` file.
-pub fn resolve_deactivate() -> Vec<String> {
+pub fn resolve_deactivate() -> Result<Vec<String>> {
     let mut vars = vec![CONFIG_DIR_VAR.to_string(), ACTIVE_ENV_VAR.to_string()];
     if let Some(name) = active_env() {
         if let Ok(dir) = env_dir(&name) {
+            let hooks_dir = hooks::hooks_dir()?;
+            hooks::run_pre_hook(&hooks_dir, "pre-deactivate", &name, &dir)?;
             if let Ok(env_vars) = load_env_file(&dir) {
                 vars.extend(env_vars.into_iter().map(|(key, _)| key));
             }
+            hooks::run_post_hook(&hooks_dir, "post-deactivate", &name, &dir);
         }
     }
-    vars
+    Ok(vars)
 }
 
 /// Runs `command` as a child process with `CLAUDE_CONFIG_DIR`/`CVM_ENV`, plus
@@ -498,9 +504,108 @@ mod tests {
         assert!(validate_name("work").is_ok());
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn resolve_activate_runs_pre_and_post_activate_hooks() {
+        with_temp_home(|home| {
+            let _exec_guard = hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let marker = home.join("hook-log.txt");
+
+            for event in ["pre-activate", "post-activate"] {
+                let hook = hooks_dir.join(event);
+                fs::write(
+                    &hook,
+                    format!(
+                        "#!/bin/sh\necho \"{event} $CVM_ENV\" >> {}\n",
+                        marker.display()
+                    ),
+                )
+                .unwrap();
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+            }
+
+            create_env("work", true, false).unwrap();
+            resolve_activate("work").unwrap();
+
+            let contents = fs::read_to_string(&marker).unwrap();
+            assert_eq!(contents, "pre-activate work\npost-activate work\n");
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn resolve_activate_aborts_when_pre_activate_hook_fails() {
+        with_temp_home(|home| {
+            let _exec_guard = hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let hook = hooks_dir.join("pre-activate");
+            fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+
+            create_env("work", true, false).unwrap();
+
+            assert!(resolve_activate("work").is_err());
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn resolve_deactivate_runs_pre_and_post_deactivate_hooks_when_env_active() {
+        with_temp_home(|home| {
+            let _exec_guard = hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let marker = home.join("hook-log.txt");
+
+            for event in ["pre-deactivate", "post-deactivate"] {
+                let hook = hooks_dir.join(event);
+                fs::write(
+                    &hook,
+                    format!(
+                        "#!/bin/sh\necho \"{event} $CVM_ENV\" >> {}\n",
+                        marker.display()
+                    ),
+                )
+                .unwrap();
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+            }
+
+            create_env("work", true, false).unwrap();
+            // SAFETY: guarded by HOME_LOCK (held for the whole with_temp_home closure).
+            unsafe {
+                env::set_var(ACTIVE_ENV_VAR, "work");
+            }
+
+            resolve_deactivate().unwrap();
+
+            let contents = fs::read_to_string(&marker).unwrap();
+            assert_eq!(contents, "pre-deactivate work\npost-deactivate work\n");
+
+            unsafe {
+                env::remove_var(ACTIVE_ENV_VAR);
+            }
+        });
+    }
+
+    #[test]
+    fn resolve_deactivate_skips_hooks_when_no_env_active() {
+        with_temp_home(|_home| {
+            // No CVM_ENV set - resolve_deactivate must not error and must not
+            // try to resolve any hook.
+            let vars = resolve_deactivate().unwrap();
+            assert!(vars.contains(&CONFIG_DIR_VAR.to_string()));
+        });
+    }
+
     #[test]
     fn deactivate_unsets_both_vars() {
-        let vars = resolve_deactivate();
+        let vars = resolve_deactivate().unwrap();
         assert!(vars.contains(&CONFIG_DIR_VAR.to_string()));
         assert!(vars.contains(&ACTIVE_ENV_VAR.to_string()));
     }
