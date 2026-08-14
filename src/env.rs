@@ -32,12 +32,26 @@ pub struct InheritStats {
     pub settings_copied: bool,
 }
 
+/// Resolves the user home directory for cvm paths.
+///
+/// Order: `CVM_USER_HOME`, then `HOME`, then `USERPROFILE`, then `dirs::home_dir()`.
+/// Preferring explicit env vars matters on Windows, where `dirs::home_dir()` uses
+/// the Known Folder API and ignores `USERPROFILE` — which would break tests and
+/// intentional overrides.
+fn user_home() -> Result<PathBuf> {
+    for key in ["CVM_USER_HOME", "HOME", "USERPROFILE"] {
+        if let Some(value) = env::var_os(key).filter(|value| !value.is_empty()) {
+            return Ok(PathBuf::from(value));
+        }
+    }
+    dirs::home_dir().context("could not determine the home directory")
+}
+
 pub fn cvm_home() -> Result<PathBuf> {
     if let Some(home) = env::var_os("CVM_HOME").filter(|value| !value.is_empty()) {
         return Ok(PathBuf::from(home));
     }
-    let home = dirs::home_dir().context("could not determine the home directory")?;
-    Ok(home.join(".cvm"))
+    Ok(user_home()?.join(".cvm"))
 }
 
 pub fn envs_dir() -> Result<PathBuf> {
@@ -49,8 +63,7 @@ pub fn envs_dir() -> Result<PathBuf> {
 /// environment's credentials are copied from, not wherever the active
 /// environment happens to point.
 fn global_claude_dir() -> Result<PathBuf> {
-    let home = dirs::home_dir().context("could not determine the home directory")?;
-    Ok(home.join(".claude"))
+    Ok(user_home()?.join(".claude"))
 }
 
 pub fn env_dir(name: &str) -> Result<PathBuf> {
@@ -441,18 +454,20 @@ mod tests {
     /// Serializes tests that temporarily override cvm's home directory.
     static HOME_LOCK: Mutex<()> = Mutex::new(());
 
-    fn with_temp_home<F: FnOnce()>(f: F) {
+    fn with_temp_home<F: FnOnce(&Path)>(f: F) {
         let _guard = HOME_LOCK.lock().unwrap();
         let home = tempfile::tempdir().unwrap();
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let prev = env::var(key).ok();
         let prev_cvm_home = env::var("CVM_HOME").ok();
-        // SAFETY: guarded by HOME_LOCK so no other test reads home_dir concurrently.
+        let prev_cvm_user_home = env::var("CVM_USER_HOME").ok();
+        // SAFETY: guarded by HOME_LOCK so no other test reads home paths concurrently.
         unsafe {
             env::set_var(key, home.path());
-            env::set_var("CVM_HOME", home.path());
+            env::set_var("CVM_USER_HOME", home.path());
+            env::set_var("CVM_HOME", home.path().join(".cvm"));
         }
-        f();
+        f(home.path());
         match prev {
             Some(v) => unsafe { env::set_var(key, v) },
             None => unsafe { env::remove_var(key) },
@@ -460,6 +475,10 @@ mod tests {
         match prev_cvm_home {
             Some(v) => unsafe { env::set_var("CVM_HOME", v) },
             None => unsafe { env::remove_var("CVM_HOME") },
+        }
+        match prev_cvm_user_home {
+            Some(v) => unsafe { env::set_var("CVM_USER_HOME", v) },
+            None => unsafe { env::remove_var("CVM_USER_HOME") },
         }
     }
 
@@ -591,8 +610,9 @@ mod tests {
 
     #[test]
     fn create_env_creates_skills_bin_and_dotenv() {
-        with_temp_home(|| {
+        with_temp_home(|home| {
             let (dir, _, _) = create_env("work", true, false).unwrap();
+            assert!(dir.starts_with(home.join(".cvm")));
             assert!(dir.join("skills").is_dir());
             assert!(dir.join("bin").is_dir());
             assert!(dir.join(".env").is_file());
@@ -601,14 +621,16 @@ mod tests {
 
     #[test]
     fn create_env_inherits_global_skills_and_settings_when_requested() {
-        with_temp_home(|| {
+        with_temp_home(|home| {
             let global = global_claude_dir().unwrap();
+            assert!(global.starts_with(home));
             let skill = global.join("skills/example");
             fs::create_dir_all(&skill).unwrap();
             fs::write(skill.join("SKILL.md"), "# Example\n").unwrap();
             fs::write(global.join("settings.json"), "{\"theme\":\"dark\"}").unwrap();
 
             let (dir, _, stats) = create_env("work", true, true).unwrap();
+            assert!(dir.starts_with(home.join(".cvm")));
 
             assert_eq!(stats.skills_linked + stats.skills_copied, 1);
             assert!(stats.settings_copied);
