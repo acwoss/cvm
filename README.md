@@ -369,9 +369,10 @@ parallel without interfering with each other or with whatever environment
 ├── bin/                  # cvm binary, if installed via install.sh
 └── envs/
     ├── work/             # = $CLAUDE_CONFIG_DIR when "work" is active
+    │   ├── .env          # starter file for MCP credentials & other local secrets
+    │   ├── skills/       # custom skills (created on `cvm create`)
+    │   ├── bin/          # env-local executables (created on `cvm create`)
     │   ├── settings.json
-    │   ├── .env          # optional: MCP credentials & other local secrets
-    │   ├── skills/
     │   └── ...           # anything else Claude Code itself creates here
     └── personal/
         └── ...

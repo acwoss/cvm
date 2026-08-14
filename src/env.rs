@@ -75,7 +75,18 @@ pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
         copy_credentials(&global_claude_dir()?, &dir)?
     };
 
+    ensure_env_layout(&dir)?;
+
     Ok((dir, credentials_copied))
+}
+
+/// Ensures an environment directory has the standard layout: `skills/`, `bin/`,
+/// and a starter `.env` file.
+pub fn ensure_env_layout(dir: &Path) -> Result<()> {
+    fs::create_dir_all(dir.join("skills"))?;
+    fs::create_dir_all(dir.join("bin"))?;
+    let _ = ensure_dotenv_file(dir)?;
+    Ok(())
 }
 
 /// Copies `CREDENTIALS_FILE` from `source_claude_dir` into `env_dir`, if it
@@ -379,6 +390,15 @@ mod tests {
         assert_eq!(path, dir.path().join(DOTENV_FILE));
         assert_eq!(fs::read_to_string(&path).unwrap(), DOTENV_HEADER);
         assert_eq!(load_env_file(dir.path()).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn create_env_creates_skills_bin_and_dotenv() {
+        let dir = tempfile::tempdir().unwrap();
+        ensure_env_layout(dir.path()).unwrap();
+        assert!(dir.path().join("skills").is_dir());
+        assert!(dir.path().join("bin").is_dir());
+        assert!(dir.path().join(".env").is_file());
     }
 
     #[test]
