@@ -24,6 +24,9 @@ pub const CONFIG_DIR_VAR: &str = "CLAUDE_CONFIG_DIR";
 pub const ACTIVE_ENV_VAR: &str = "CVM_ENV";
 
 pub fn cvm_home() -> Result<PathBuf> {
+    if let Some(home) = env::var_os("CVM_HOME").filter(|value| !value.is_empty()) {
+        return Ok(PathBuf::from(home));
+    }
     let home = dirs::home_dir().context("could not determine the home directory")?;
     Ok(home.join(".cvm"))
 }
@@ -303,7 +306,7 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
 
-    /// Serializes tests that temporarily override `$HOME` / `$USERPROFILE`.
+    /// Serializes tests that temporarily override cvm's home directory.
     static HOME_LOCK: Mutex<()> = Mutex::new(());
 
     fn with_temp_home<F: FnOnce()>(f: F) {
@@ -311,12 +314,20 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let prev = env::var(key).ok();
+        let prev_cvm_home = env::var("CVM_HOME").ok();
         // SAFETY: guarded by HOME_LOCK so no other test reads home_dir concurrently.
-        unsafe { env::set_var(key, home.path()) };
+        unsafe {
+            env::set_var(key, home.path());
+            env::set_var("CVM_HOME", home.path());
+        }
         f();
         match prev {
             Some(v) => unsafe { env::set_var(key, v) },
             None => unsafe { env::remove_var(key) },
+        }
+        match prev_cvm_home {
+            Some(v) => unsafe { env::set_var("CVM_HOME", v) },
+            None => unsafe { env::remove_var("CVM_HOME") },
         }
     }
 
