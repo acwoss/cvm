@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create & open — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/docs.css" />
+</head>
+<body data-page="hto-create-open" data-depth="1">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">How-to</div>
+      <h1>Create an environment and open Claude</h1>
+      <p class="docs-lead">Choose between activating your shell and launching a one-shot Claude process.</p>
+
+<ol class="steps">
+  <li><strong>Create</strong> the environment.<pre><code>cvm create work</code></pre></li>
+  <li><strong>Option A — activate the shell</strong> (needs <code>cvm init</code>).<pre><code>cvm use work
+claude</code></pre><p>Prompt shows <code>(work)</code>; <code>PATH</code> prefers <code>~/.cvm/envs/work/bin</code>.</p></li>
+  <li><strong>Option B — open without activating</strong>.<pre><code>cvm open work
+# or
+cvm create work --open</code></pre><p>Only the Claude child receives <code>CLAUDE_CONFIG_DIR</code> / <code>CVM_ENV</code>.</p></li>
+</ol>
+<div class="callout">Combine flags: <code>cvm create work --inherit --open</code>.</div>
+
+      <div class="docs-pager">
+        <a href="../examples.html"><span class="label">Previous</span><span class="title">Examples</span></a>
+        <a class="next" href="inherit-skills.html"><span class="label">Next</span><span class="title">Inherit skills</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../../assets/docs.js"></script>
+</body>
+</html>

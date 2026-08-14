@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overview — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/docs.css" />
+</head>
+<body data-page="overview" data-depth="0">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">Overview</div>
+      <h1>cvm documentation</h1>
+      <p class="docs-lead">Technical reference for isolating and sharing Claude Code environments with cvm.</p>
+
+<div class="card-grid">
+  <a class="card-link" href="getting-started.html"><h3>Getting started</h3><p>Install cvm, wire shell hooks, create your first environment.</p></a>
+  <a class="card-link" href="commands.html"><h3>Command reference</h3><p>Every public subcommand, flag, and alias in one place.</p></a>
+  <a class="card-link" href="concepts.html"><h3>Core concepts</h3><p>CLAUDE_CONFIG_DIR, shims, activation protocol, and directory layout.</p></a>
+  <a class="card-link" href="examples.html"><h3>Examples</h3><p>Copy-paste workflows for day-to-day Claude Code isolation.</p></a>
+</div>
+<h2>What cvm is</h2>
+<p><strong>cvm</strong> (Claude Virtualenv Manager) isolates Claude Code configuration the way Python <code>venv</code> isolates packages. Each environment is a directory under <code>~/.cvm/envs/&lt;name&gt;</code>. When active, cvm points Claude Code at that directory via <code>CLAUDE_CONFIG_DIR</code> — without patching Claude Code.</p>
+<p>Beyond isolation, cvm shares reproducible setups through a secrets-free <code>cvm.yaml</code>, can seed environments from <code>~/.claude</code>, auto-activates from a project <code>.cvm</code> file, and runs several Claude sessions in parallel.</p>
+<h2>Audience</h2>
+<ul>
+  <li>Developers juggling multiple Claude Code configs (clients, repos, personal vs work).</li>
+  <li>Teams that want matching MCP servers and skills without committing tokens.</li>
+  <li>Anyone wiring statuslines or shell tooling around <code>CVM_ENV</code>.</li>
+</ul>
+<h2>Mental model</h2>
+<ol class="steps">
+  <li><strong>Create</strong> an environment — directory, optional credentials, optional inherited skills, <code>bin/</code> shims.</li>
+  <li><strong>Activate</strong> with <code>cvm use</code> (shell hooks) or run once with <code>cvm open</code> / <code>cvm run</code>.</li>
+  <li>Claude Code reads and writes under that environment’s config directory.</li>
+  <li>Optionally <strong>export / import</strong> the non-secret surface as <code>cvm.yaml</code>.</li>
+</ol>
+<div class="callout"><strong>Shell integration is required for <code>use</code> / <code>deactivate</code>.</strong> A child process cannot mutate its parent shell. Install hooks with <code>cvm init</code>.</div>
+<h2>How-to guides</h2>
+<div class="card-grid">
+  <a class="card-link" href="how-to/create-and-open.html"><h3>Create &amp; open</h3><p>One-shot <code>--open</code> and everyday activate flows.</p></a>
+  <a class="card-link" href="how-to/inherit-skills.html"><h3>Inherit skills</h3><p>Seed from <code>~/.claude</code> with <code>--inherit</code>.</p></a>
+  <a class="card-link" href="how-to/share-team-setup.html"><h3>Share with the team</h3><p>Export/import <code>cvm.yaml</code> without leaking secrets.</p></a>
+  <a class="card-link" href="how-to/auto-activate.html"><h3>Auto-activate</h3><p>Project-local <code>.cvm</code> files like a lightweight direnv.</p></a>
+  <a class="card-link" href="how-to/parallel-sessions.html"><h3>Parallel sessions</h3><p>Several <code>cvm open</code> processes side by side.</p></a>
+  <a class="card-link" href="how-to/per-env-secrets.html"><h3>Per-env secrets</h3><p>Edit <code>.env</code> safely; values never export.</p></a>
+</div>
+
+      <div class="docs-pager">
+        <span></span>
+        <a class="next" href="getting-started.html"><span class="label">Next</span><span class="title">Getting started</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

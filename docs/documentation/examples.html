@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Examples — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/docs.css" />
+</head>
+<body data-page="examples" data-depth="0">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">Reference</div>
+      <h1>Examples</h1>
+      <p class="docs-lead">Short, copy-paste oriented recipes. Prefer how-to guides when you need the why.</p>
+
+<h2>Everyday env</h2>
+<pre><code>cvm create work
+cvm use work
+claude
+skills   # npx --yes skills under this env</code></pre>
+<h2>Create and open immediately</h2>
+<pre><code>cvm create client-acme --open</code></pre>
+<h2>Anonymous sandbox</h2>
+<pre><code>cvm create sandbox --anonymous
+cvm use sandbox
+claude   # fresh login</code></pre>
+<h2>Inherit global skills/settings</h2>
+<pre><code>cvm create work --inherit --open</code></pre>
+<h2>One-off without activating the shell</h2>
+<pre><code>cvm run work -- claude mcp list
+cvm open work</code></pre>
+<h2>Secrets for MCP</h2>
+<pre><code>cvm edit work
+# POSTGRES_PASSWORD=...
+# GITHUB_TOKEN=...
+cvm run work -- claude</code></pre>
+<h2>Team share</h2>
+<pre><code>cvm export -o cvm.yaml
+git add cvm.yaml &amp;&amp; git commit -m "Add shared Claude environment"
+
+# teammate
+cvm import cvm.yaml -n project-backend-api
+cvm edit project-backend-api   # fill secrets
+cvm use project-backend-api</code></pre>
+<h2>Project auto-activate</h2>
+<pre><code>echo project-backend-api &gt; .cvm
+# with hooks installed, cd into this tree activates the env</code></pre>
+<h2>Parallel clients</h2>
+<pre><code>cvm open client-acme &amp;
+cvm open client-globex &amp;
+cvm open personal &amp;</code></pre>
+
+      <div class="docs-pager">
+        <a href="commands.html"><span class="label">Previous</span><span class="title">Command reference</span></a>
+        <a class="next" href="how-to/create-and-open.html"><span class="label">Next</span><span class="title">Create & open</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

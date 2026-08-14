@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cvm — Claude Virtualenv Manager</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* ── Theme tokens ─────────────────────────────────────────────────────────── */
+    [data-theme="dark"] {
+      --c-bg:           #0b0f17;
+      --c-surface:      #0d1117;
+      --c-card:         #161b22;
+      --c-border:       #21262d;
+      --c-border-sub:   #161b22;
+      --c-border-hover: #30363d;
+      --c-text:         #e6edf3;
+      --c-muted:        #94a3b8;
+      --c-faint:        #4a5568;
+      --c-nav-bg:       rgba(11, 15, 23, 0.88);
+      --c-glow-start:   rgba(56, 189, 248, 0.06);
+      --c-grid:         rgba(56, 189, 248, 0.03);
+      --c-code-bg:      #161b22;
+      --c-star-bg:      #0b0f17;
+      --c-scroll-thumb: #21262d;
+      --c-scroll-hover: #30363d;
+    }
+
+    [data-theme="light"] {
+      --c-bg:           #f0f4f8;
+      --c-surface:      #f8fafc;
+      --c-card:         #ffffff;
+      --c-border:       #e2e8f0;
+      --c-border-sub:   #f1f5f9;
+      --c-border-hover: #cbd5e1;
+      --c-text:         #0f172a;
+      --c-muted:        #475569;
+      --c-faint:        #94a3b8;
+      --c-nav-bg:       rgba(240, 244, 248, 0.88);
+      --c-glow-start:   rgba(56, 189, 248, 0.08);
+      --c-grid:         rgba(14, 165, 233, 0.05);
+      --c-code-bg:      #f1f5f9;
+      --c-star-bg:      #f0f4f8;
+      --c-scroll-thumb: #cbd5e1;
+      --c-scroll-hover: #94a3b8;
+    }
+
+    /* ── Base ─────────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      background-color: var(--c-bg);
+      color: var(--c-text);
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--c-scroll-thumb); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--c-scroll-hover); }
+
+    .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+    /* ── Utilities ────────────────────────────────────────────────────────────── */
+    .grid-noise {
+      background-image:
+        linear-gradient(var(--c-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--c-grid) 1px, transparent 1px);
+      background-size: 48px 48px;
+      transition: background-image 0.3s ease;
+    }
+
+    .nav-link {
+      color: var(--c-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.15s ease;
+      letter-spacing: -0.01em;
+    }
+    .nav-link:hover { color: var(--c-text); }
+
+    .btn-primary {
+      background: #38bdf8;
+      color: #0b0f17;
+      font-weight: 700;
+      font-size: 0.875rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+      letter-spacing: -0.01em;
+    }
+    .btn-primary:hover {
+      background: #7dd3fc;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--c-muted);
+      font-weight: 500;
+      font-size: 0.875rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--c-border);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: border-color 0.15s ease, color 0.15s ease;
+      letter-spacing: -0.01em;
+    }
+    .btn-ghost:hover {
+      border-color: var(--c-border-hover);
+      color: var(--c-text);
+    }
+
+    .card-hover {
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .card-hover:hover {
+      border-color: rgba(56, 189, 248, 0.3) !important;
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.12), 0 8px 32px rgba(0, 0, 0, 0.15);
+      transform: translateY(-1px);
+    }
+
+    /* ── Terminal cursor ──────────────────────────────────────────────────────── */
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: #38bdf8;
+      animation: blink 1.1s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      border-radius: 1px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ── Theme toggle ─────────────────────────────────────────────────────────── */
+    .theme-toggle {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      border-radius: 100px;
+      border: 1px solid var(--c-border);
+      background: var(--c-card);
+      cursor: pointer;
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      flex-shrink: 0;
+      outline: none;
+    }
+    .theme-toggle:hover {
+      border-color: var(--c-border-hover);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+    }
+    .theme-toggle-thumb {
+      position: absolute;
+      top: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: left 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .theme-toggle-thumb.dark  { left: 3px; }
+    .theme-toggle-thumb.light { left: 27px; background: #f59e0b; }
+
+    /* Dynamic element variables */
+    .dynamic-card { background: var(--c-card); border: 1px solid var(--c-border); }
+    .dynamic-surface { background: var(--c-surface); border: 1px solid var(--c-border); }
+    .dynamic-code { background: var(--c-code-bg); border: 1px solid var(--c-border); color: var(--c-text); }
+  </style>
+</head>
+<body class="theme-transition">
+
+  <!-- Background Canvas & Noise -->
+  <canvas id="particle-canvas" style="position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0.85;"></canvas>
+  <div class="grid-noise" style="position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.5;"></div>
+
+  <!-- ── Header ── -->
+  <header style="position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--c-border-sub); background: var(--c-nav-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 40px;">
+      <!-- Logo -->
+      <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; flex-shrink: 0;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); display: flex; align-items: center; justify-content: center; color: #0b0f17;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="8" width="14" height="10" rx="2" />
+            <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+            <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+            <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+            <line x1="12" y1="8" x2="12" y2="5" />
+            <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+            <line x1="5" y1="12" x2="3" y2="12" />
+            <line x1="19" y1="12" x2="21" y2="12" />
+          </svg>
+        </div>
+        <div>
+          <span style="font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.03em;">cvm</span>
+          <span style="margin-left: 8px; font-size: 0.65rem; font-weight: 500; color: var(--c-faint); border: 1px solid var(--c-border); border-radius: 4px; padding: 2px 6px; letter-spacing: 0.02em; text-transform: uppercase;">
+            Claude Virtualenv Manager
+          </span>
+        </div>
+      </a>
+
+      <!-- Nav links -->
+      <nav style="display: flex; align-items: center; gap: 28px; flex: 1;">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#sharing-&-security" class="nav-link">Sharing & Security</a>
+        <a href="#commands" class="nav-link">Commands</a>
+        <a href="documentation/" class="nav-link">Docs</a>
+      </nav>
+
+      <!-- Theme toggle -->
+      <button id="theme-toggle" class="theme-toggle" aria-label="Switch theme">
+        <div id="theme-toggle-thumb" class="theme-toggle-thumb dark">
+          <svg id="icon-moon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0b0f17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+          <svg id="icon-sun" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+        </div>
+      </button>
+
+      <!-- GitHub link -->
+      <a href="https://github.com/acwoss/cvm" target="_blank" rel="noopener noreferrer" 
+         class="dynamic-card" style="display: flex; align-items: center; gap: 8px; border-radius: 8px; padding: 7px 14px; text-decoration: none; color: var(--c-text); font-size: 0.875rem; font-weight: 600; flex-shrink: 0; transition: border-color 0.15s ease;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+        </svg>
+        Star on GitHub
+        <span style="display: flex; align-items: center; gap: 4px; background: var(--c-star-bg); border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; color: #f59e0b;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        </span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 96px 24px 80px;">
+    <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse at center, var(--c-glow-start) 0%, transparent 70%); pointer-events: none;"></div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;">
+      <!-- Left -->
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+          <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); border-radius: 100px; padding: 4px 12px 4px 8px; font-size: 0.75rem; font-weight: 600; color: #38bdf8; letter-spacing: 0.01em;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; display: inline-block;"></span>
+            Virtual Environments for Claude Code
+          </span>
+        </div>
+
+        <h1 style="margin: 0 0 20px; font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; color: var(--c-text);">
+          Isolated, reproducible<br />
+          <span style="background: linear-gradient(90deg, #38bdf8, #7dd3fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">environments</span> for<br />
+          Claude Code.
+        </h1>
+
+        <p style="margin: 0 0 36px; font-size: 1.0625rem; line-height: 1.7; color: var(--c-muted); max-width: 480px;">
+          Isolate configs, credentials, MCP server registrations, and memories per project. Share setups with your team via <code class="font-mono dynamic-code" style="font-size: 0.85rem; padding: 1px 6px; border-radius: 4px;">cvm.yaml</code> without ever leaking tokens or history.
+        </p>
+
+        <!-- Install box -->
+        <div class="dynamic-surface" style="display: flex; align-items: center; gap: 12px; border-radius: 10px; padding: 10px 12px 10px 16px; margin-bottom: 24px;">
+          <span style="color: #38bdf8; flex-shrink: 0; display: flex;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
+          </span>
+          <code class="font-mono" style="font-size: 0.78125rem; color: var(--c-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash</code>
+          <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash" style="background: rgba(128,128,128,0.08); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--c-muted); display: flex; align-items: center; gap: 6px; font-size: 0.75rem; flex-shrink: 0; transition: all 0.15s ease;">
+            <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            <span class="copy-text">Copy</span>
+          </button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="documentation/" class="btn-primary">Read the Docs 
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+          </a>
+          <a href="https://github.com/acwoss/cvm" target="_blank" rel="noopener noreferrer" class="btn-ghost">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg> 
+            View Source
+          </a>
+        </div>
+      </div>
+
+      <!-- Right (Terminal Preview) -->
+      <div id="terminal-container" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--c-border);">
+        <div id="terminal-header" style="background: #161b22; border-bottom: 1px solid var(--c-border); padding: 12px 16px; display: flex; align-items: center; gap: 8px;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57;"></div>
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></div>
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #28ca41;"></div>
+          <div style="flex: 1; text-align: center;">
+            <span class="font-mono" style="font-size: 0.75rem; color: #4a5568;">bash — 80×24</span>
+          </div>
+        </div>
+        <div id="terminal-body" style="background: #0d1117; padding: 20px 24px; min-height: 280px; font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; line-height: 1.7;">
+          <div style="color: #4a5568;">$ <span class="terminal-cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section id="features" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px;">
+    <div style="margin-bottom: 56px;">
+      <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Core capabilities</div>
+      <h2 style="margin: 0; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text);">Built for real project isolation</h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+      <!-- Feature 1 -->
+      <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+        </div>
+        <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Complete Isolation</h3>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--c-muted); line-height: 1.65;">Separate CLAUDE_CONFIG_DIR per project. Credentials, history, and MCP tools never collide between environments.</p>
+      </div>
+      <!-- Feature 2 -->
+      <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+        </div>
+        <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Zero Config Drift</h3>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--c-muted); line-height: 1.65;">Share cvm.yaml manifests across teams to reproduce exact MCP servers and skills in one command.</p>
+      </div>
+      <!-- Feature 3 -->
+      <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); display: flex; align-items: center; justify-content: center; color: #f59e0b; margin-bottom: 20px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+        </div>
+        <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Safe by Construction</h3>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--c-muted); line-height: 1.65;">Auth tokens, API credentials, and session history are never exported or included in manifest files.</p>
+      </div>
+      <!-- Feature 4 -->
+      <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>
+        </div>
+        <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Parallel Execution</h3>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--c-muted); line-height: 1.65;">Launch multiple cvm open &lt;env&gt; sessions side by side across client projects without shell interference.</p>
+      </div>
+      <!-- Feature 5 -->
+      <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+        </div>
+        <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Project Auto-Activate</h3>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--c-muted); line-height: 1.65;">Drop a <code class="font-mono" style="font-size: 0.8rem;">.cvm</code> file with an env name in a repo — shell hooks activate it on <code class="font-mono" style="font-size: 0.8rem;">cd</code>, like a lightweight direnv.</p>
+      </div>
+      <!-- Feature 6 -->
+      <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+        </div>
+        <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Self-Update</h3>
+        <p style="margin: 0; font-size: 0.9rem; color: var(--c-muted); line-height: 1.65;">Run <code class="font-mono" style="font-size: 0.8rem;">cvm update</code> to pull the latest release binary from GitHub and replace the install in place.</p>
+      </div>
+    </div>
+  </section>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+    <div style="height: 1px; background: var(--c-border-sub);"></div>
+  </div>
+
+  <!-- ── Sharing & Security ── -->
+  <section id="sharing-&-security" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start;">
+      <div>
+        <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Team sharing</div>
+        <h2 style="margin: 0 0 20px; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text); line-height: 1.15;">
+          Share environments,<br />never secrets.
+        </h2>
+        <p style="margin: 0 0 32px; font-size: 0.9375rem; line-height: 1.7; color: var(--c-muted);">
+          Export your full Claude Code setup — MCP server registrations, skills, settings, and env var names — into a portable <code class="font-mono dynamic-code" style="font-size: 0.85rem; padding: 1px 6px; border-radius: 4px;">cvm.yaml</code>.
+          Teammates run <code class="font-mono dynamic-code" style="font-size: 0.85rem; padding: 1px 6px; border-radius: 4px;">cvm import</code> to reproduce the exact environment in seconds.
+        </p>
+
+        <!-- Steps -->
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+          <div class="font-mono" style="font-size: 0.75rem; color: var(--c-border); font-weight: 700; padding-top: 2px; flex-shrink: 0; width: 24px;">01</div>
+          <div>
+            <div style="font-size: 0.9375rem; font-weight: 600; color: var(--c-text); margin-bottom: 4px;">Export your environment</div>
+            <div style="font-size: 0.875rem; color: var(--c-muted); line-height: 1.6;">Run cvm export to generate a cvm.yaml manifest in the current directory.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+          <div class="font-mono" style="font-size: 0.75rem; color: var(--c-border); font-weight: 700; padding-top: 2px; flex-shrink: 0; width: 24px;">02</div>
+          <div>
+            <div style="font-size: 0.9375rem; font-weight: 600; color: var(--c-text); margin-bottom: 4px;">Commit to version control</div>
+            <div style="font-size: 0.875rem; color: var(--c-muted); line-height: 1.6;">The manifest contains no secrets — safe to commit and share in your repo.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+          <div class="font-mono" style="font-size: 0.75rem; color: var(--c-border); font-weight: 700; padding-top: 2px; flex-shrink: 0; width: 24px;">03</div>
+          <div>
+            <div style="font-size: 0.9375rem; font-weight: 600; color: var(--c-text); margin-bottom: 4px;">Teammates import instantly</div>
+            <div style="font-size: 0.875rem; color: var(--c-muted); line-height: 1.6;">Run cvm import to reproduce MCP servers, skills, and settings. Secrets stay local.</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px;">
+          <span style="color: #f59e0b; flex-shrink: 0; margin-top: 2px; display: flex;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+          </span>
+          <p style="margin: 0; font-size: 0.875rem; color: var(--c-muted); line-height: 1.6;">
+            <span style="color: #f59e0b; font-weight: 600;">Secrets stay local — </span>
+            <code class="font-mono" style="font-size: 0.8rem; color: var(--c-text);">cvm export</code> shares variable names, never sensitive <code class="font-mono" style="font-size: 0.8rem; color: var(--c-text);">.env</code> values.
+          </p>
+        </div>
+      </div>
+
+      <!-- YAML Card -->
+      <div class="dynamic-card" style="border-radius: 12px; overflow: hidden;">
+        <div id="yaml-header" style="background: var(--c-code-bg); border-bottom: 1px solid var(--c-border); padding: 10px 16px; display: flex; align-items: center; gap: 8px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--c-border);"></div>
+          <span class="font-mono" style="font-size: 0.75rem; color: var(--c-muted);">cvm.yaml</span>
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--c-faint); font-size: 0.7rem;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #28ca41; display: inline-block;"></span>
+            Safe to commit
+          </div>
+        </div>
+        <div style="padding: 20px 24px;">
+          <pre class="font-mono" style="font-size: 0.775rem; line-height: 1.75; margin: 0; white-space: pre-wrap; color: var(--c-muted);"><span style="color: var(--c-faint);"># cvm.yaml — shareable, secrets-free</span>
+<span style="color: #38bdf8;">version:</span> <span style="color: var(--c-text);">"1"</span>
+
+<span style="color: #38bdf8;">settings:</span>
+  <span style="color: #38bdf8;">theme:</span> <span style="color: var(--c-text);">dark</span>
+  <span style="color: #38bdf8;">verbose:</span> <span style="color: var(--c-text);">false</span>
+
+<span style="color: #38bdf8;">mcp_servers:</span>
+<span style="color: var(--c-faint);">  - </span><span style="color: #38bdf8;">name:</span> <span style="color: var(--c-text);">filesystem</span>
+    <span style="color: #38bdf8;">command:</span> <span style="color: var(--c-text);">npx</span>
+    <span style="color: #38bdf8;">args:</span> <span style="color: var(--c-text);">["-y", "@modelcontextprotocol/server-filesystem"]</span>
+<span style="color: var(--c-faint);">  - </span><span style="color: #38bdf8;">name:</span> <span style="color: var(--c-text);">github</span>
+    <span style="color: #38bdf8;">command:</span> <span style="color: var(--c-text);">npx</span>
+    <span style="color: #38bdf8;">args:</span> <span style="color: var(--c-text);">["-y", "@modelcontextprotocol/server-github"]</span>
+
+<span style="color: #38bdf8;">skills:</span>
+<span style="color: var(--c-faint);">  - </span><span style="color: var(--c-muted);">review</span>
+<span style="color: var(--c-faint);">  - </span><span style="color: var(--c-muted);">aesthetic-stance</span>
+
+<span style="color: #38bdf8;">env_vars:</span>
+<span style="color: var(--c-faint);">  # Variable names only — values never exported</span>
+  <span style="color: #38bdf8;">GITHUB_TOKEN:</span> <span style="color: var(--c-text);">""</span>
+  <span style="color: #38bdf8;">OPENAI_API_KEY:</span> <span style="color: var(--c-text);">""</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+    <div style="height: 1px; background: var(--c-border-sub);"></div>
+  </div>
+
+  <!-- ── Commands ── -->
+  <section id="commands" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px;">
+    <div style="margin-bottom: 48px;">
+      <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">CLI Reference</div>
+      <h2 style="margin: 0; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text);">Every command you need</h2>
+    </div>
+
+    <!-- Command buttons -->
+    <div id="cmd-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;"></div>
+
+    <!-- Highlighted Command Box -->
+    <div class="dynamic-card" style="border-radius: 12px; padding: 28px 32px; display: flex; align-items: flex-start; gap: 24px; margin-bottom: 24px;">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.15); display: flex; align-items: center; justify-content: center; color: #38bdf8; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
+      </div>
+      <div>
+        <code id="active-cmd-name" class="font-mono" style="font-size: 1.0625rem; color: var(--c-text); font-weight: 600; display: block; margin-bottom: 10px;">cvm create &lt;env&gt; [--anonymous] [--inherit] [--open]</code>
+        <p id="active-cmd-desc" style="margin: 0; font-size: 0.9375rem; color: var(--c-muted); line-height: 1.6;">Create an isolated env at ~/.cvm/envs/&lt;env&gt;; reuse global credentials unless --anonymous; --inherit links skills and copies settings; --open launches Claude Code</p>
+      </div>
+    </div>
+
+    <!-- Commands Table/List -->
+    <div id="cmd-list" style="border: 1px solid var(--c-border); border-radius: 12px; overflow: hidden;"></div>
+  </section>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+    <div style="height: 1px; background: var(--c-border-sub);"></div>
+  </div>
+
+  <!-- ── Bottom CTA ── -->
+  <section style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px; text-align: center;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 250px; background: radial-gradient(ellipse at center, var(--c-glow-start) 0%, transparent 70%); pointer-events: none;"></div>
+    <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; font-weight: 500;">Get started</div>
+    <h2 style="margin: 0 auto 16px; max-width: 560px; font-size: clamp(1.75rem, 3vw, 2.75rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text); line-height: 1.1;">
+      Ship cleaner projects with isolated Claude environments
+    </h2>
+    <p style="margin: 0 auto 40px; max-width: 460px; font-size: 1rem; color: var(--c-muted); line-height: 1.7;">
+      One install. Zero config drift. Secrets never leave your machine.
+    </p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px;">
+      <a href="https://github.com/acwoss/cvm" target="_blank" rel="noopener noreferrer" class="btn-primary" style="font-size: 0.9375rem; padding: 0.625rem 1.5rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg> 
+        Star on GitHub
+      </a>
+      <a href="documentation/" class="btn-ghost" style="font-size: 0.9375rem; padding: 0.625rem 1.5rem;">Read the Docs</a>
+    </div>
+    <div class="dynamic-surface" style="display: inline-flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 16px;">
+      <span style="color: var(--c-faint); font-size: 0.78125rem;">$</span>
+      <code class="font-mono" style="font-size: 0.78125rem; color: var(--c-muted);">curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash</code>
+      <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash" style="background: rgba(128,128,128,0.08); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--c-muted); display: flex; align-items: center; gap: 6px; font-size: 0.75rem; flex-shrink: 0; transition: all 0.15s ease;">
+        <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+        <span class="copy-text">Copy</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer style="border-top: 1px solid var(--c-border-sub); position: relative; z-index: 1;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 40px 24px;">
+      <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 32px; align-items: start;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <div style="width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); display: flex; align-items: center; justify-content: center; color: #0b0f17;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="8" width="14" height="10" rx="2" />
+                <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+                <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+                <line x1="12" y1="8" x2="12" y2="5" />
+                <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+                <line x1="5" y1="12" x2="3" y2="12" />
+                <line x1="19" y1="12" x2="21" y2="12" />
+              </svg>
+            </div>
+            <span style="font-weight: 700; color: var(--c-text); letter-spacing: -0.03em;">cvm</span>
+          </div>
+          <p style="margin: 0; font-size: 0.8125rem; color: var(--c-faint); line-height: 1.5;">
+            Open source · MIT License<br />
+            by <a href="https://github.com/acwoss" target="_blank" rel="noopener noreferrer" style="color: var(--c-muted); text-decoration: none;">@acwoss</a>
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 48px; padding-left: 40px;">
+          <div>
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--c-faint); margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase;">Project</div>
+            <div style="margin-bottom: 8px;"><a href="https://github.com/acwoss/cvm" target="_blank" rel="noopener noreferrer" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">GitHub Repository</a></div>
+            <div style="margin-bottom: 8px;"><a href="documentation/" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">Documentation</a></div>
+            <div style="margin-bottom: 8px;"><a href="https://github.com/acwoss/cvm/releases" target="_blank" rel="noopener noreferrer" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">Changelog</a></div>
+            <div style="margin-bottom: 8px;"><a href="https://github.com/acwoss/cvm/issues" target="_blank" rel="noopener noreferrer" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">Issues</a></div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--c-faint); margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase;">Shell Integrations</div>
+            <div style="margin-bottom: 8px;"><a href="documentation/getting-started.html" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">Bash</a></div>
+            <div style="margin-bottom: 8px;"><a href="documentation/getting-started.html" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">Zsh</a></div>
+            <div style="margin-bottom: 8px;"><a href="documentation/getting-started.html" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">Fish</a></div>
+            <div style="margin-bottom: 8px;"><a href="documentation/getting-started.html" style="font-size: 0.875rem; color: var(--c-faint); text-decoration: none;">PowerShell</a></div>
+          </div>
+        </div>
+
+        <a href="https://github.com/acwoss/cvm" target="_blank" rel="noopener noreferrer"
+           class="dynamic-surface" style="display: flex; align-items: center; gap: 8px; border-radius: 8px; padding: 10px 16px; text-decoration: none; color: var(--c-muted); font-size: 0.875rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
+          acwoss/cvm
+        </a>
+      </div>
+
+      <div style="margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--c-border-sub); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.8125rem; color: var(--c-faint);">Released under the MIT License. Use it, fork it, ship it.</span>
+        <span class="font-mono" style="font-size: 0.75rem; color: var(--c-border);">v0.3.0</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript Logics -->
+  <script>
+    // ─── Theme Management ────────────────────────────────────────────────────────
+    const htmlEl = document.documentElement;
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeToggleThumb = document.getElementById('theme-toggle-thumb');
+    const iconSun = document.getElementById('icon-sun');
+    const iconMoon = document.getElementById('icon-moon');
+    const yamlHeader = document.getElementById('yaml-header');
+
+    let currentTheme = localStorage.getItem('cvm-theme') || 'dark';
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      htmlEl.setAttribute('data-theme', theme);
+      localStorage.setItem('cvm-theme', theme);
+
+      if (theme === 'light') {
+        themeToggleThumb.className = 'theme-toggle-thumb light';
+        iconSun.style.display = 'block';
+        iconMoon.style.display = 'none';
+        if (yamlHeader) yamlHeader.style.background = '#f1f5f9';
+      } else {
+        themeToggleThumb.className = 'theme-toggle-thumb dark';
+        iconSun.style.display = 'none';
+        iconMoon.style.display = 'block';
+        if (yamlHeader) yamlHeader.style.background = '#0d1117';
+      }
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+    applyTheme(currentTheme);
+
+    // ─── Particle Canvas Animation ───────────────────────────────────────────────
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    const PARTICLE_COUNT = 80;
+    const CONNECT_DIST = 140;
+    const MOUSE_DIST = 180;
+
+    let particles = [];
+    let mouse = { x: -9999, y: -9999 };
+
+    function initCanvas() {
+      const w = canvas.parentElement.clientWidth || window.innerWidth;
+      const h = canvas.parentElement.clientHeight || window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+
+      particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        radius: Math.random() * 1.5 + 0.5,
+        opacity: Math.random() * 0.5 + 0.15,
+      }));
+    }
+
+    window.addEventListener('resize', initCanvas);
+    window.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+    window.addEventListener('mouseleave', () => {
+      mouse.x = -9999;
+      mouse.y = -9999;
+    });
+
+    function renderParticles() {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const isDark = currentTheme === 'dark';
+      const particleAlphaMul = isDark ? 1 : 0.55;
+      const lineAlphaMul = isDark ? 1 : 0.5;
+
+      for (const p of particles) {
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MOUSE_DIST) {
+          const force = (MOUSE_DIST - dist) / MOUSE_DIST * 0.012;
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        }
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (speed > 0.9) {
+          p.vx *= 0.9 / speed;
+          p.vy *= 0.9 / speed;
+        }
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = w;
+        if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h;
+        if (p.y > h) p.y = 0;
+      }
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            const alpha = (1 - dist / CONNECT_DIST) * 0.18 * lineAlphaMul;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            ctx.lineWidth = 0.75;
+            ctx.stroke();
+          }
+        }
+      }
+
+      for (const p of particles) {
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const nearMouse = Math.sqrt(dx * dx + dy * dy) < MOUSE_DIST;
+        const glow = (nearMouse ? 0.9 : p.opacity) * particleAlphaMul;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(56, 189, 248, ${glow})`;
+        ctx.fill();
+        if (nearMouse) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 3, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(56, 189, 248, ${0.06 * particleAlphaMul})`;
+          ctx.fill();
+        }
+      }
+
+      requestAnimationFrame(renderParticles);
+    }
+
+    initCanvas();
+    renderParticles();
+
+    // ─── Terminal Animation ───────────────────────────────────────────────────
+    const TERMINAL_STEPS = [
+      { type: 'cmd',   text: '$ cvm create project-api --inherit --open', delay: 0 },
+      { type: 'out',   text: '✓ environment \'project-api\' created',     delay: 700 },
+      { type: 'out',   text: '  Inherited 3 skills · settings.json',      delay: 950 },
+      { type: 'out',   text: '  Launching Claude Code...',                delay: 1200 },
+      { type: 'blank', text: '',                                          delay: 1400 },
+      { type: 'cmd',   text: '$ echo project-api > .cvm',                delay: 1700 },
+      { type: 'out',   text: '  # auto-activates on cd (shell hooks)',    delay: 2200 },
+      { type: 'blank', text: '',                                          delay: 2400 },
+      { type: 'cmd',   text: '$ cvm use project-api',                    delay: 2700 },
+      { type: 'env',   text: '(project-api)  CVM_ENV active',            delay: 3400 },
+    ];
+
+    const termContainer = document.getElementById('terminal-container');
+    const termBody = document.getElementById('terminal-body');
+    let terminalStarted = false;
+
+    const termObserver = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !terminalStarted) {
+        terminalStarted = true;
+        runTerminalSequence();
+      }
+    }, { threshold: 0.3 });
+
+    if (termContainer) termObserver.observe(termContainer);
+
+    function runTerminalSequence() {
+      termBody.innerHTML = '';
+      
+      TERMINAL_STEPS.forEach((step, index) => {
+        setTimeout(() => {
+          let lineEl = document.createElement('div');
+          
+          if (step.type === 'blank') {
+            lineEl.style.height = '0.5em';
+          } else if (step.type === 'cmd') {
+            lineEl.style.color = '#e6edf3';
+            lineEl.textContent = step.text;
+          } else if (step.type === 'env') {
+            lineEl.style.marginTop = '4px';
+            lineEl.innerHTML = `
+              <span style="background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; display: inline-block;">
+                ${step.text}
+              </span>`;
+          } else {
+            lineEl.style.color = '#4a5568';
+            lineEl.textContent = step.text;
+          }
+
+          // Add cursor to latest step or clear previous cursor
+          const prevCursor = termBody.querySelector('.terminal-cursor');
+          if (prevCursor) prevCursor.remove();
+
+          termBody.appendChild(lineEl);
+
+          if (index < TERMINAL_STEPS.length - 1) {
+            const cursorSpan = document.createElement('span');
+            cursorSpan.className = 'terminal-cursor';
+            termBody.appendChild(cursorSpan);
+          }
+        }, step.delay);
+      });
+    }
+
+    // ─── Copy Button Interactions ────────────────────────────────────────────────
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const textToCopy = btn.getAttribute('data-copy');
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          const icon = btn.querySelector('.copy-icon');
+          const text = btn.querySelector('.copy-text');
+          
+          btn.style.background = 'rgba(56,189,248,0.15)';
+          btn.style.borderColor = 'rgba(56,189,248,0.4)';
+          btn.style.color = '#38bdf8';
+          
+          if (icon) {
+            icon.innerHTML = '<polyline points="20 6 9 17 4 12" />';
+            icon.setAttribute('stroke-width', '2.5');
+          }
+          if (text) text.textContent = 'Copied';
+
+          setTimeout(() => {
+            btn.style.background = 'rgba(128,128,128,0.08)';
+            btn.style.borderColor = 'var(--c-border)';
+            btn.style.color = 'var(--c-muted)';
+            if (icon) {
+              icon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />';
+              icon.setAttribute('stroke-width', '2');
+            }
+            if (text) text.textContent = 'Copy';
+          }, 2000);
+        });
+      });
+    });
+
+    // ─── Interactive Commands System ───────────────────────────────────────────
+    const COMMANDS = [
+      { tab: 'init', cmd: 'cvm init <shell>', desc: 'Print shell integration hooks for bash, zsh, fish, or powershell (eval in your profile)' },
+      { tab: 'update', cmd: 'cvm update', desc: 'Check GitHub Releases and replace the running binary in place' },
+      { tab: 'create', cmd: 'cvm create <env> [--anonymous] [--inherit] [--open]', desc: 'Create an isolated env at ~/.cvm/envs/<env>; reuse global credentials unless --anonymous; --inherit links skills and copies settings; --open launches Claude Code' },
+      { tab: 'list', cmd: 'cvm list', alias: 'ls', desc: 'List all environments, highlighting the active one' },
+      { tab: 'use', cmd: 'cvm use <env>', alias: 'activate', desc: 'Activate <env> in the current shell (needs cvm init); shows (env) in the prompt and prepends env/bin to PATH' },
+      { tab: 'deactivate', cmd: 'cvm deactivate', desc: 'Restore the default global Claude Code setup (needs shell integration)' },
+      { tab: 'current', cmd: 'cvm current', desc: 'Print the name of the environment active in this shell' },
+      { tab: 'remove', cmd: 'cvm remove <env> [-y]', alias: 'rm', desc: 'Delete an environment directory; -y/--yes skips confirmation' },
+      { tab: 'edit', cmd: 'cvm edit [env]', desc: 'Open <env>’s .env in $VISUAL/$EDITOR (defaults to active), creating it if missing' },
+      { tab: 'run', cmd: 'cvm run <env> -- <cmd>', desc: 'Run <cmd> scoped to <env> without activating it in the parent shell' },
+      { tab: 'open', cmd: 'cvm open <env>', desc: 'Run claude scoped to <env> with CVM_ENV set (alias for cvm run <env> -- claude); safe in parallel' },
+      { tab: 'export', cmd: 'cvm export [env] [-o file]', desc: 'Export an environment (default: active) to a YAML manifest; .env values are never included' },
+      { tab: 'import', cmd: 'cvm import <file> [-n env]', desc: 'Create/update an environment from a YAML manifest; recreates .env placeholders without secret values' },
+    ];
+
+    let activeCmdIndex = 0;
+    const cmdTabsContainer = document.getElementById('cmd-tabs');
+    const activeCmdName = document.getElementById('active-cmd-name');
+    const activeCmdDesc = document.getElementById('active-cmd-desc');
+    const cmdListContainer = document.getElementById('cmd-list');
+
+    function renderCommands() {
+      // Tabs
+      cmdTabsContainer.innerHTML = '';
+      COMMANDS.forEach((c, i) => {
+        const btn = document.createElement('button');
+        btn.textContent = c.tab || c.cmd;
+        btn.className = 'font-mono';
+        btn.style.cssText = `
+          background: ${activeCmdIndex === i ? 'rgba(56,189,248,0.1)' : 'var(--c-card)'};
+          border: 1px solid ${activeCmdIndex === i ? 'rgba(56,189,248,0.3)' : 'var(--c-border)'};
+          border-radius: 8px; padding: 8px 16px; cursor: pointer;
+          color: ${activeCmdIndex === i ? '#38bdf8' : 'var(--c-muted)'};
+          font-size: 0.78125rem; font-weight: ${activeCmdIndex === i ? 600 : 400};
+          transition: all 0.15s ease;
+        `;
+        btn.addEventListener('click', () => {
+          activeCmdIndex = i;
+          renderCommands();
+        });
+        cmdTabsContainer.appendChild(btn);
+      });
+
+      // Active Box Card
+      activeCmdName.textContent = COMMANDS[activeCmdIndex].cmd;
+      activeCmdDesc.textContent = COMMANDS[activeCmdIndex].desc;
+
+      // Table List
+      cmdListContainer.innerHTML = '';
+      COMMANDS.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = `
+          display: grid; grid-template-columns: minmax(280px, 1.15fr) 1fr;
+          border-bottom: ${i < COMMANDS.length - 1 ? '1px solid var(--c-border-sub)' : 'none'};
+          cursor: pointer; transition: background 0.1s ease;
+          background: ${activeCmdIndex === i ? 'var(--c-surface)' : 'transparent'};
+        `;
+        
+        row.addEventListener('mouseenter', () => {
+          if (activeCmdIndex !== i) row.style.background = 'rgba(128,128,128,0.04)';
+        });
+        row.addEventListener('mouseleave', () => {
+          if (activeCmdIndex !== i) row.style.background = 'transparent';
+        });
+        row.addEventListener('click', () => {
+          activeCmdIndex = i;
+          renderCommands();
+        });
+
+        const aliasHtml = c.alias
+          ? `<div style="margin-top: 4px; font-size: 0.7rem; color: var(--c-faint);">alias: <code class="font-mono">${c.alias}</code></div>`
+          : '';
+
+        row.innerHTML = `
+          <div style="padding: 14px 20px; border-right: 1px solid var(--c-border-sub);">
+            <code class="font-mono" style="font-size: 0.8125rem; color: ${activeCmdIndex === i ? '#38bdf8' : 'var(--c-text)'}; font-weight: 500; word-break: break-word;">${c.cmd}</code>
+            ${aliasHtml}
+          </div>
+          <div style="padding: 14px 20px;">
+            <span style="font-size: 0.875rem; color: var(--c-muted);">${c.desc}</span>
+          </div>
+        `;
+        cmdListContainer.appendChild(row);
+      });
+    }
+
+    renderCommands();
+  </script>
+</body>
+</html>

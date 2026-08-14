@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto-activate — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/docs.css" />
+</head>
+<body data-page="hto-auto" data-depth="1">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">How-to</div>
+      <h1>Auto-activate with a .cvm file</h1>
+      <p class="docs-lead">Bind a repository (or subdirectory) to an environment the way direnv binds env vars.</p>
+
+<ol class="steps">
+  <li>Confirm shell hooks are installed (<code>cvm init</code>) and reloaded after upgrades.</li>
+  <li>Create a <code>.cvm</code> file in the project root:<pre><code># Claude environment for this project
+project-backend-api</code></pre><p>First non-empty, non-<code>#</code> line wins.</p></li>
+  <li><code>cd</code> into the tree — hooks search upward, run <code>cvm use</code>, and set <code>CVM_AUTO=1</code>.</li>
+  <li>Leave the tree — auto sessions deactivate. A manual <code>cvm use</code> clears <code>CVM_AUTO</code> (pinned) so leaving the directory does not deactivate.</li>
+</ol>
+<h3>direnv alternative</h3>
+<pre><code>while IFS='=' read -r key value; do
+  export "$key=$value"
+done &lt; &lt;(cvm __resolve-activate project-backend-api)
+PATH="$CLAUDE_CONFIG_DIR/bin:$PATH"
+export PATH</code></pre>
+
+      <div class="docs-pager">
+        <a href="share-team-setup.html"><span class="label">Previous</span><span class="title">Share a team setup</span></a>
+        <a class="next" href="parallel-sessions.html"><span class="label">Next</span><span class="title">Parallel sessions</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../../assets/docs.js"></script>
+</body>
+</html>

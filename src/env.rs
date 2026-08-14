@@ -6,6 +6,8 @@ use std::process::{Command, ExitStatus};
 
 use anyhow::{bail, Context, Result};
 
+use crate::shims::{env_bin_dir, write_env_shims};
+
 /// Name of an environment's local dotenv file, relative to its directory.
 const DOTENV_FILE: &str = ".env";
 
@@ -23,9 +25,33 @@ pub const CONFIG_DIR_VAR: &str = "CLAUDE_CONFIG_DIR";
 /// and statusline integrations can read it the same way.
 pub const ACTIVE_ENV_VAR: &str = "CVM_ENV";
 
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct InheritStats {
+    pub skills_linked: usize,
+    pub skills_copied: usize,
+    pub settings_copied: bool,
+}
+
+/// Resolves the user home directory for cvm paths.
+///
+/// Order: `CVM_USER_HOME`, then `HOME`, then `USERPROFILE`, then `dirs::home_dir()`.
+/// Preferring explicit env vars matters on Windows, where `dirs::home_dir()` uses
+/// the Known Folder API and ignores `USERPROFILE` — which would break tests and
+/// intentional overrides.
+fn user_home() -> Result<PathBuf> {
+    for key in ["CVM_USER_HOME", "HOME", "USERPROFILE"] {
+        if let Some(value) = env::var_os(key).filter(|value| !value.is_empty()) {
+            return Ok(PathBuf::from(value));
+        }
+    }
+    dirs::home_dir().context("could not determine the home directory")
+}
+
 pub fn cvm_home() -> Result<PathBuf> {
-    let home = dirs::home_dir().context("could not determine the home directory")?;
-    Ok(home.join(".cvm"))
+    if let Some(home) = env::var_os("CVM_HOME").filter(|value| !value.is_empty()) {
+        return Ok(PathBuf::from(home));
+    }
+    Ok(user_home()?.join(".cvm"))
 }
 
 pub fn envs_dir() -> Result<PathBuf> {
@@ -37,8 +63,7 @@ pub fn envs_dir() -> Result<PathBuf> {
 /// environment's credentials are copied from, not wherever the active
 /// environment happens to point.
 fn global_claude_dir() -> Result<PathBuf> {
-    let home = dirs::home_dir().context("could not determine the home directory")?;
-    Ok(home.join(".claude"))
+    Ok(user_home()?.join(".claude"))
 }
 
 pub fn env_dir(name: &str) -> Result<PathBuf> {
@@ -61,8 +86,13 @@ pub fn active_env() -> Option<String> {
 /// Creates a new, empty environment directory. Unless `anonymous` is set,
 /// also copies the global Claude Code credentials file into it (if one
 /// exists) so the new environment starts out already logged in. Returns the
-/// environment directory and whether credentials were copied.
-pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
+/// environment directory, whether credentials were copied, and inheritance
+/// statistics.
+pub fn create_env(
+    name: &str,
+    anonymous: bool,
+    inherit: bool,
+) -> Result<(PathBuf, bool, InheritStats)> {
     let dir = env_dir(name)?;
     if dir.exists() {
         bail!("environment '{name}' already exists at {}", dir.display());
@@ -75,7 +105,116 @@ pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
         copy_credentials(&global_claude_dir()?, &dir)?
     };
 
-    Ok((dir, credentials_copied))
+    ensure_env_layout(&dir)?;
+    let inherit_stats = if inherit {
+        inherit_from_global(&dir)?
+    } else {
+        InheritStats::default()
+    };
+
+    Ok((dir, credentials_copied, inherit_stats))
+}
+
+/// Ensures an environment directory has the standard layout: `skills/`, `bin/`,
+/// and a starter `.env` file.
+pub fn ensure_env_layout(dir: &Path) -> Result<()> {
+    fs::create_dir_all(dir.join("skills"))?;
+    ensure_env_bin(dir)?;
+    let _ = ensure_dotenv_file(dir)?;
+    Ok(())
+}
+
+pub fn inherit_from_global(env_dir: &Path) -> Result<InheritStats> {
+    let global = global_claude_dir()?;
+    let mut stats = InheritStats::default();
+    let skills_src = global.join("skills");
+    let skills_dst = env_dir.join("skills");
+    fs::create_dir_all(&skills_dst)?;
+
+    if skills_src.is_dir() {
+        for entry in fs::read_dir(&skills_src)
+            .with_context(|| format!("failed to read {}", skills_src.display()))?
+        {
+            let entry = entry?;
+            let source = entry.path();
+            if !source.is_dir() {
+                continue;
+            }
+            let dest = skills_dst.join(entry.file_name());
+            if dest.exists() {
+                continue;
+            }
+            match symlink_dir_or_copy(&source, &dest)? {
+                LinkKind::Symlink => stats.skills_linked += 1,
+                LinkKind::Copy => stats.skills_copied += 1,
+            }
+        }
+    }
+
+    let settings_src = global.join("settings.json");
+    let settings_dst = env_dir.join("settings.json");
+    if settings_src.is_file() && !settings_dst.exists() {
+        fs::copy(&settings_src, &settings_dst).with_context(|| {
+            format!(
+                "failed to copy {} to {}",
+                settings_src.display(),
+                settings_dst.display()
+            )
+        })?;
+        stats.settings_copied = true;
+    }
+
+    Ok(stats)
+}
+
+enum LinkKind {
+    Symlink,
+    Copy,
+}
+
+fn symlink_dir_or_copy(source: &Path, dest: &Path) -> Result<LinkKind> {
+    if create_dir_symlink(source, dest).is_ok() {
+        return Ok(LinkKind::Symlink);
+    }
+    copy_dir_recursive(source, dest)?;
+    Ok(LinkKind::Copy)
+}
+
+#[cfg(unix)]
+fn create_dir_symlink(source: &Path, dest: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(source, dest)
+}
+
+#[cfg(windows)]
+fn create_dir_symlink(source: &Path, dest: &Path) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_dir(source, dest)
+}
+
+fn copy_dir_recursive(source: &Path, dest: &Path) -> Result<()> {
+    fs::create_dir_all(dest).with_context(|| format!("failed to create {}", dest.display()))?;
+    for entry in
+        fs::read_dir(source).with_context(|| format!("failed to read {}", source.display()))?
+    {
+        let entry = entry?;
+        let entry_source = entry.path();
+        let entry_dest = dest.join(entry.file_name());
+        if entry_source.is_dir() {
+            copy_dir_recursive(&entry_source, &entry_dest)?;
+        } else {
+            fs::copy(&entry_source, &entry_dest).with_context(|| {
+                format!(
+                    "failed to copy {} to {}",
+                    entry_source.display(),
+                    entry_dest.display()
+                )
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn ensure_env_bin(dir: &Path) -> Result<()> {
+    write_env_shims(dir)
 }
 
 /// Copies `CREDENTIALS_FILE` from `source_claude_dir` into `env_dir`, if it
@@ -129,6 +268,7 @@ pub fn remove_env(name: &str) -> Result<()> {
 /// anything the `.env` file happens to define under the same name.
 pub fn resolve_activate(name: &str) -> Result<Vec<(String, String)>> {
     let dir = ensure_env_exists(name)?;
+    ensure_env_bin(&dir)?;
     let dir_str = dir
         .to_str()
         .with_context(|| format!("environment path is not valid UTF-8: {}", dir.display()))?
@@ -158,15 +298,21 @@ pub fn resolve_deactivate() -> Vec<String> {
 /// never touching the parent shell's environment.
 pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
     let dir = ensure_env_exists(name)?;
+    ensure_env_bin(&dir)?;
     let Some((program, args)) = command.split_first() else {
         bail!("no command given to run");
     };
     let env_vars = load_env_file(&dir)?;
-    let status: ExitStatus = Command::new(program)
-        .args(args)
+    let mut paths = vec![env_bin_dir(&dir)];
+    paths.extend(env::split_paths(&env::var_os("PATH").unwrap_or_default()));
+    let path = env::join_paths(paths).context("failed to prepend environment bin to PATH")?;
+    let mut cmd = Command::new(program);
+    cmd.args(args)
         .envs(env_vars)
         .env(CONFIG_DIR_VAR, &dir)
         .env(ACTIVE_ENV_VAR, name)
+        .env("PATH", path);
+    let status: ExitStatus = cmd
         .status()
         .with_context(|| format!("failed to execute '{program}'"))?;
     Ok(status.code().unwrap_or(1))
@@ -209,9 +355,22 @@ pub fn load_env_file(dir: &Path) -> Result<Vec<(String, String)>> {
             );
             continue;
         }
+        if is_reserved_env_key(key) {
+            continue;
+        }
         pairs.push((key.to_string(), unquote(value.trim()).to_string()));
     }
     Ok(pairs)
+}
+
+fn is_reserved_env_key(key: &str) -> bool {
+    key.eq_ignore_ascii_case("PATH")
+        || key.eq_ignore_ascii_case("PS1")
+        || key.eq_ignore_ascii_case(CONFIG_DIR_VAR)
+        || key
+            .as_bytes()
+            .get(..4)
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"CVM_"))
 }
 
 /// Header comment written at the top of a fresh `.env` file, whether created
@@ -290,6 +449,38 @@ pub fn edit_env(name: &str) -> Result<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    /// Serializes tests that temporarily override cvm's home directory.
+    static HOME_LOCK: Mutex<()> = Mutex::new(());
+
+    fn with_temp_home<F: FnOnce(&Path)>(f: F) {
+        let _guard = HOME_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+        let prev = env::var(key).ok();
+        let prev_cvm_home = env::var("CVM_HOME").ok();
+        let prev_cvm_user_home = env::var("CVM_USER_HOME").ok();
+        // SAFETY: guarded by HOME_LOCK so no other test reads home paths concurrently.
+        unsafe {
+            env::set_var(key, home.path());
+            env::set_var("CVM_USER_HOME", home.path());
+            env::set_var("CVM_HOME", home.path().join(".cvm"));
+        }
+        f(home.path());
+        match prev {
+            Some(v) => unsafe { env::set_var(key, v) },
+            None => unsafe { env::remove_var(key) },
+        }
+        match prev_cvm_home {
+            Some(v) => unsafe { env::set_var("CVM_HOME", v) },
+            None => unsafe { env::remove_var("CVM_HOME") },
+        }
+        match prev_cvm_user_home {
+            Some(v) => unsafe { env::set_var("CVM_USER_HOME", v) },
+            None => unsafe { env::remove_var("CVM_USER_HOME") },
+        }
+    }
 
     #[test]
     fn rejects_path_traversal_names() {
@@ -360,6 +551,29 @@ mod tests {
     }
 
     #[test]
+    fn dotenv_parsing_ignores_reserved_activation_vars() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join(".env"),
+            "PATH=poisoned\n\
+             CVM_OLD_PATH=poisoned\n\
+             CVM_OLD_PS1=poisoned\n\
+             CVM_OLD_PROMPT=poisoned\n\
+             CVM_HOME=poisoned\n\
+             CVM_AUTO=poisoned\n\
+             CLAUDE_CONFIG_DIR=poisoned\n\
+             CVM_ENV=poisoned\n\
+             SAFE_VALUE=kept\n",
+        )
+        .unwrap();
+
+        assert_eq!(
+            load_env_file(dir.path()).unwrap(),
+            vec![("SAFE_VALUE".to_string(), "kept".to_string())]
+        );
+    }
+
+    #[test]
     fn write_env_file_round_trips_through_load_env_file() {
         let dir = tempfile::tempdir().unwrap();
         let mut vars = BTreeMap::new();
@@ -379,6 +593,56 @@ mod tests {
         assert_eq!(path, dir.path().join(DOTENV_FILE));
         assert_eq!(fs::read_to_string(&path).unwrap(), DOTENV_HEADER);
         assert_eq!(load_env_file(dir.path()).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn ensure_env_layout_creates_skills_bin_dotenv_and_shims() {
+        let dir = tempfile::tempdir().unwrap();
+        ensure_env_layout(dir.path()).unwrap();
+        assert!(dir.path().join("skills").is_dir());
+        assert!(dir.path().join("bin").is_dir());
+        assert!(dir.path().join(".env").is_file());
+        assert!(dir.path().join("bin/claude").is_file());
+        assert!(dir.path().join("bin/skills").is_file());
+        assert!(dir.path().join("bin/claude.cmd").is_file());
+        assert!(dir.path().join("bin/skills.cmd").is_file());
+    }
+
+    #[test]
+    fn create_env_creates_skills_bin_and_dotenv() {
+        with_temp_home(|home| {
+            let (dir, _, _) = create_env("work", true, false).unwrap();
+            assert!(dir.starts_with(home.join(".cvm")));
+            assert!(dir.join("skills").is_dir());
+            assert!(dir.join("bin").is_dir());
+            assert!(dir.join(".env").is_file());
+        });
+    }
+
+    #[test]
+    fn create_env_inherits_global_skills_and_settings_when_requested() {
+        with_temp_home(|home| {
+            let global = global_claude_dir().unwrap();
+            assert!(global.starts_with(home));
+            let skill = global.join("skills/example");
+            fs::create_dir_all(&skill).unwrap();
+            fs::write(skill.join("SKILL.md"), "# Example\n").unwrap();
+            fs::write(global.join("settings.json"), "{\"theme\":\"dark\"}").unwrap();
+
+            let (dir, _, stats) = create_env("work", true, true).unwrap();
+            assert!(dir.starts_with(home.join(".cvm")));
+
+            assert_eq!(stats.skills_linked + stats.skills_copied, 1);
+            assert!(stats.settings_copied);
+            assert_eq!(
+                fs::read_to_string(dir.join("skills/example/SKILL.md")).unwrap(),
+                "# Example\n"
+            );
+            assert_eq!(
+                fs::read_to_string(dir.join("settings.json")).unwrap(),
+                "{\"theme\":\"dark\"}"
+            );
+        });
     }
 
     #[test]

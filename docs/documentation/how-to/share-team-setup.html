@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Share a team setup — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/docs.css" />
+</head>
+<body data-page="hto-share" data-depth="1">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">How-to</div>
+      <h1>Share a Claude setup with cvm.yaml</h1>
+      <p class="docs-lead">Commit a reproducible, secrets-free manifest next to your project.</p>
+
+<ol class="steps">
+  <li>Configure an environment the way you want (MCP servers, permissions, skills).</li>
+  <li>Export:<pre><code>cvm use project-backend-api
+cvm export -o cvm.yaml</code></pre></li>
+  <li>Commit <code>cvm.yaml</code>. It contains settings, mcpServers, skill names, and <code>.env</code> <em>names</em> only.</li>
+  <li>Teammates import:<pre><code>cvm import cvm.yaml -n project-backend-api
+cvm edit project-backend-api   # fill blank secrets
+cvm use project-backend-api</code></pre></li>
+</ol>
+<p>Import creates skill stubs (<code>skills/&lt;name&gt;/SKILL.md</code>) you can fill or reinstall from the original source. Existing <code>.env</code> values are preserved; new names get blank entries.</p>
+<div class="callout"><strong>Security model:</strong> export never opens credentials, history, or <code>.env</code> values — only the managed surface.</div>
+
+      <div class="docs-pager">
+        <a href="inherit-skills.html"><span class="label">Previous</span><span class="title">Inherit skills</span></a>
+        <a class="next" href="auto-activate.html"><span class="label">Next</span><span class="title">Auto-activate</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../../assets/docs.js"></script>
+</body>
+</html>

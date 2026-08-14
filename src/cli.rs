@@ -32,8 +32,9 @@ pub enum Command {
     /// By default, copies the global Claude Code credentials
     /// (`~/.claude/.credentials.json`) into the new environment so it starts
     /// out already logged in. Pass `--anonymous` to skip that and create a
-    /// completely empty environment instead. Pass `--open` to launch Claude
-    /// Code in the new environment immediately after creation.
+    /// completely empty environment instead. Pass `--inherit` to seed global
+    /// skills and settings. Pass `--open` to launch Claude Code in the new
+    /// environment immediately after creation.
     Create {
         /// Name of the environment to create
         env_name: String,
@@ -41,6 +42,10 @@ pub enum Command {
         /// Do not copy the global Claude Code credentials into the new environment
         #[arg(long)]
         anonymous: bool,
+
+        /// Seed the environment from ~/.claude (skills links + settings copy)
+        #[arg(long)]
+        inherit: bool,
 
         /// After creating the environment, open Claude Code in it
         #[arg(long)]
@@ -146,4 +151,19 @@ pub enum Shell {
     Zsh,
     Fish,
     Powershell,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_accepts_inherit_flag() {
+        let cli = Cli::try_parse_from(["cvm", "create", "work", "--inherit"]).unwrap();
+
+        match cli.command {
+            Command::Create { inherit, .. } => assert!(inherit),
+            _ => panic!("expected create command"),
+        }
+    }
 }
