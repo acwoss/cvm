@@ -2,6 +2,26 @@ pub const SCRIPT: &str = r#"# cvm shell integration for fish
 # Add this to your ~/.config/fish/config.fish:
 #   cvm init fish | source
 
+function __cvm_deactivate
+    set -l __cvm_out (command cvm __resolve-deactivate); or return $status
+    if set -q CVM_OLD_PATH
+        set -gx PATH $CVM_OLD_PATH
+        set -e CVM_OLD_PATH
+    end
+    for __cvm_line in $__cvm_out
+        if test -n "$__cvm_line"
+            set -e $__cvm_line
+        end
+    end
+    if functions -q __cvm_old_fish_prompt
+        functions -e fish_prompt
+        functions -c __cvm_old_fish_prompt fish_prompt
+        functions -e __cvm_old_fish_prompt
+    end
+    set -e CVM_AUTO
+    set -e CVM_AUTO_ROOT
+end
+
 function cvm
     switch $argv[1]
         case use activate
@@ -10,6 +30,9 @@ function cvm
                 return 1
             end
             set -l __cvm_out (command cvm __resolve-activate $argv[2]); or return $status
+            if set -q CVM_ENV; and test -n "$CVM_ENV"
+                __cvm_deactivate; or return $status
+            end
             if not set -q CVM_OLD_PATH
                 set -gx CVM_OLD_PATH $PATH
             end
@@ -34,23 +57,7 @@ function cvm
             set -e CVM_AUTO
             set -e CVM_AUTO_ROOT
         case deactivate
-            set -l __cvm_out (command cvm __resolve-deactivate); or return $status
-            if set -q CVM_OLD_PATH
-                set -gx PATH $CVM_OLD_PATH
-                set -e CVM_OLD_PATH
-            end
-            for __cvm_line in $__cvm_out
-                if test -n "$__cvm_line"
-                    set -e $__cvm_line
-                end
-            end
-            if functions -q __cvm_old_fish_prompt
-                functions -e fish_prompt
-                functions -c __cvm_old_fish_prompt fish_prompt
-                functions -e __cvm_old_fish_prompt
-            end
-            set -e CVM_AUTO
-            set -e CVM_AUTO_ROOT
+            __cvm_deactivate
         case '*'
             command cvm $argv
     end

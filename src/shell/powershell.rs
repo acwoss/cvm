@@ -2,6 +2,23 @@ pub const SCRIPT: &str = r#"# cvm shell integration for PowerShell
 # Add this to your $PROFILE:
 #   cvm init powershell | Out-String | Invoke-Expression
 
+function global:__cvm_deactivate {
+    param([string]$CvmBin)
+
+    $out = & $CvmBin __resolve-deactivate
+    if ($LASTEXITCODE -ne 0) { return $false }
+    if (Test-Path Env:CVM_OLD_PATH) {
+        $env:Path = $env:CVM_OLD_PATH
+        Remove-Item Env:CVM_OLD_PATH
+    }
+    foreach ($line in $out) {
+        if ($line) { Remove-Item -Path "Env:$line" -ErrorAction SilentlyContinue }
+    }
+    Remove-Item Env:CVM_AUTO -ErrorAction SilentlyContinue
+    Remove-Item Env:CVM_AUTO_ROOT -ErrorAction SilentlyContinue
+    return $true
+}
+
 function cvm {
     param(
         [Parameter(ValueFromRemainingArguments = $true)]
@@ -23,6 +40,9 @@ function cvm {
             }
             $out = & $cvmBin __resolve-activate $CvmArgs[1]
             if ($LASTEXITCODE -ne 0) { return }
+            if ($env:CVM_ENV) {
+                if (-not (__cvm_deactivate $cvmBin)) { return }
+            }
             if (-not (Test-Path Env:CVM_OLD_PATH)) {
                 $env:CVM_OLD_PATH = $env:Path
             }
@@ -45,17 +65,7 @@ function cvm {
             Remove-Item Env:CVM_AUTO_ROOT -ErrorAction SilentlyContinue
         }
         'deactivate' {
-            $out = & $cvmBin __resolve-deactivate
-            if ($LASTEXITCODE -ne 0) { return }
-            if (Test-Path Env:CVM_OLD_PATH) {
-                $env:Path = $env:CVM_OLD_PATH
-                Remove-Item Env:CVM_OLD_PATH
-            }
-            foreach ($line in $out) {
-                if ($line) { Remove-Item -Path "Env:$line" -ErrorAction SilentlyContinue }
-            }
-            Remove-Item Env:CVM_AUTO -ErrorAction SilentlyContinue
-            Remove-Item Env:CVM_AUTO_ROOT -ErrorAction SilentlyContinue
+            if (-not (__cvm_deactivate $cvmBin)) { return }
         }
         default {
             & $cvmBin @CvmArgs

@@ -86,4 +86,20 @@ mod tests {
     fn powershell_ignores_non_filesystem_providers() {
         assert!(generate(Shell::Powershell).contains("$PWD.Provider.Name -ne 'FileSystem'"));
     }
+
+    #[test]
+    fn all_shell_hooks_deactivate_the_current_env_before_switching() {
+        for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Powershell] {
+            let script = generate(shell);
+            assert!(
+                script.matches("__cvm_deactivate").count() >= 3,
+                "{shell:?} must define and reuse one deactivate helper"
+            );
+        }
+
+        assert!(generate(Shell::Bash).contains(r#"if [ -n "${CVM_ENV-}" ]; then"#));
+        assert!(generate(Shell::Zsh).contains(r#"if [ -n "${CVM_ENV-}" ]; then"#));
+        assert!(generate(Shell::Fish).contains("__cvm_deactivate; or return $status"));
+        assert!(generate(Shell::Powershell).contains("__cvm_deactivate $cvmBin"));
+    }
 }

@@ -2,6 +2,25 @@ pub const SCRIPT: &str = r#"# cvm shell integration for bash
 # Add this to your ~/.bashrc:
 #   eval "$(cvm init bash)"
 
+__cvm_deactivate() {
+  local __cvm_out
+  __cvm_out="$(command cvm __resolve-deactivate)" || return $?
+  if [ -n "${CVM_OLD_PATH+x}" ]; then
+    export PATH="$CVM_OLD_PATH"
+    unset CVM_OLD_PATH
+  fi
+  if [ -n "${CVM_OLD_PS1+x}" ]; then
+    PS1="$CVM_OLD_PS1"
+    export PS1
+    unset CVM_OLD_PS1
+  fi
+  local __cvm_key
+  while IFS= read -r __cvm_key; do
+    [ -n "$__cvm_key" ] && unset "$__cvm_key"
+  done <<< "$__cvm_out"
+  unset CVM_AUTO CVM_AUTO_ROOT
+}
+
 cvm() {
   case "$1" in
     use|activate)
@@ -11,6 +30,9 @@ cvm() {
       fi
       local __cvm_out
       __cvm_out="$(command cvm __resolve-activate "$2")" || return $?
+      if [ -n "${CVM_ENV-}" ]; then
+        __cvm_deactivate || return $?
+      fi
       if [ -z "${CVM_OLD_PATH+x}" ]; then
         export CVM_OLD_PATH="$PATH"
       fi
@@ -33,22 +55,7 @@ cvm() {
       unset CVM_AUTO CVM_AUTO_ROOT
       ;;
     deactivate)
-      local __cvm_out
-      __cvm_out="$(command cvm __resolve-deactivate)" || return $?
-      if [ -n "${CVM_OLD_PATH+x}" ]; then
-        export PATH="$CVM_OLD_PATH"
-        unset CVM_OLD_PATH
-      fi
-      if [ -n "${CVM_OLD_PS1+x}" ]; then
-        PS1="$CVM_OLD_PS1"
-        export PS1
-        unset CVM_OLD_PS1
-      fi
-      local __cvm_key
-      while IFS= read -r __cvm_key; do
-        [ -n "$__cvm_key" ] && unset "$__cvm_key"
-      done <<< "$__cvm_out"
-      unset CVM_AUTO CVM_AUTO_ROOT
+      __cvm_deactivate
       ;;
     *)
       command cvm "$@"
