@@ -16,12 +16,24 @@ function cvm
                     set -gx $__cvm_parts[1] $__cvm_parts[2]
                 end
             end
+            if not functions -q __cvm_old_fish_prompt
+                functions -c fish_prompt __cvm_old_fish_prompt
+            end
+            function fish_prompt
+                printf '(%s) ' "$CVM_ENV"
+                __cvm_old_fish_prompt
+            end
         case deactivate
             set -l __cvm_out (command cvm __resolve-deactivate); or return $status
             for __cvm_line in $__cvm_out
                 if test -n "$__cvm_line"
                     set -e $__cvm_line
                 end
+            end
+            if functions -q __cvm_old_fish_prompt
+                functions -e fish_prompt
+                functions -c __cvm_old_fish_prompt fish_prompt
+                functions -e __cvm_old_fish_prompt
             end
         case '*'
             command cvm $argv

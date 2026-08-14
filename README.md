@@ -105,6 +105,10 @@ Once installed, calling `cvm` in your shell always goes through the wrapper
 function first — `use`, `activate`, and `deactivate` are intercepted, and
 everything else is passed straight through to the compiled binary.
 
+The shell hook prefixes the prompt with the active environment name, such as
+`(work)`, and restores the previous prompt on `cvm deactivate`. After upgrading
+`cvm`, re-run `cvm init` for your shell to install the latest hook.
+
 If you run the raw `cvm use`/`cvm deactivate` binary without this hook
 installed, `cvm` prints a warning explaining that shell integration isn't
 active instead of silently doing nothing.

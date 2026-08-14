@@ -28,10 +28,20 @@ function cvm {
                     Set-Item -Path "Env:$($Matches[1])" -Value $Matches[2]
                 }
             }
+            if (-not (Test-Path variable:global:CVM_OLD_PROMPT)) {
+                $global:CVM_OLD_PROMPT = (Get-Content function:prompt).ToString()
+            }
+            function global:prompt {
+                "($env:CVM_ENV) " + (& ([scriptblock]::Create($global:CVM_OLD_PROMPT)))
+            }
         }
         'deactivate' {
             $out = & $cvmBin __resolve-deactivate
             if ($LASTEXITCODE -ne 0) { return }
+            if (Test-Path variable:global:CVM_OLD_PROMPT) {
+                Set-Item function:global:prompt ([scriptblock]::Create($global:CVM_OLD_PROMPT))
+                Remove-Variable CVM_OLD_PROMPT -Scope Global
+            }
             foreach ($line in $out) {
                 if ($line) { Remove-Item -Path "Env:$line" -ErrorAction SilentlyContinue }
             }
