@@ -626,6 +626,9 @@ mod tests {
     #[test]
     fn create_env_runs_post_create_hook() {
         with_temp_home(|home| {
+            // HOME_LOCK (held by with_temp_home) first, then EXEC_TEST_LOCK -
+            // the same order everywhere, so the two can never deadlock.
+            let _exec_guard = crate::hooks::EXEC_TEST_LOCK.lock().unwrap();
             let hooks_dir = home.join(".cvm").join("hooks");
             fs::create_dir_all(&hooks_dir).unwrap();
             let hook = hooks_dir.join("post-create");

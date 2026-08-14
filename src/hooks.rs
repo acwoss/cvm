@@ -86,6 +86,24 @@ fn execute_hook(hooks_dir: &Path, event: &str, env_name: &str, env_dir: &Path) -
     Ok(())
 }
 
+/// Serializes tests that write an executable hook file and then spawn it.
+///
+/// `cargo test` runs tests as parallel threads of one process, which opens the
+/// classic fork/exec race: while thread A holds a write fd on its freshly
+/// written hook, thread B forks, the child inherits that fd, and A's `exec` of
+/// the script fails with `ETXTBSY` ("Text file busy") until the child reaches
+/// its own `exec`. `O_CLOEXEC` cannot help - that window *is* the pre-exec
+/// window. Holding this guard across the whole write-then-spawn section keeps
+/// the two off each other.
+///
+/// `pub(crate)` so `env.rs`'s tests can take it around `create_env` and the
+/// other lifecycle calls that spawn hooks. It is independent of `env.rs`'s
+/// `HOME_LOCK` (which guards `HOME`/`CVM_HOME` mutation, not spawning); when a
+/// test needs both, take `HOME_LOCK` first - via `with_temp_home` - and this
+/// one inside, so the ordering is the same everywhere.
+#[cfg(test)]
+pub(crate) static EXEC_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,6 +127,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn hook_receives_expected_env_vars() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let out_file = dir.path().join("out.txt");
         let hook = hook_path(dir.path(), "post-create");
@@ -129,6 +148,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn execute_hook_propagates_nonzero_exit() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let hook = hook_path(dir.path(), "pre-remove");
         write_unix_hook(&hook, "#!/bin/sh\nexit 1\n");
@@ -141,6 +161,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn non_executable_hook_is_skipped() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let hook = hook_path(dir.path(), "post-create");
         fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
@@ -153,6 +174,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn run_pre_hook_propagates_failure() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let hook = hook_path(dir.path(), "pre-remove");
         write_unix_hook(&hook, "#!/bin/sh\nexit 1\n");
@@ -163,6 +185,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn run_post_hook_swallows_failure() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let hook = hook_path(dir.path(), "post-remove");
         write_unix_hook(&hook, "#!/bin/sh\nexit 1\n");
