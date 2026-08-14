@@ -42,6 +42,8 @@ history.
   and `bin/skills`. Activating an environment or using `cvm run` puts that
   directory first on `PATH`, so both commands automatically use the selected
   Claude config. The skills shim invokes `npx --yes skills`.
+- **Project auto-activation** — put an environment name in a project's `.cvm`
+  file and the shell hook activates it when you enter that directory tree.
 - **Parallel Claude Code instances** — `cvm open <env>` launches Claude Code
   scoped to `<env>`, tagging that single process with `CVM_ENV=<env>` so you
   can run several isolated instances side by side (e.g. one per client or
@@ -120,6 +122,36 @@ install the latest hook.
 If you run the raw `cvm use`/`cvm deactivate` binary without this hook
 installed, `cvm` prints a warning explaining that shell integration isn't
 active instead of silently doing nothing.
+
+### Project auto-activation with `.cvm`
+
+Create a `.cvm` file in a project directory containing the environment name:
+
+```text
+# Claude environment for this project
+project-backend-api
+```
+
+The first non-empty line that is not a `#` comment is the environment name.
+On directory changes, the shell hook searches the current directory and its
+parents for `.cvm`. It activates a different named environment when found and
+automatically deactivates it after you leave that directory tree. A manual
+`cvm use <env>` pins the session instead, so later directory changes do not
+deactivate that deliberate selection.
+
+After upgrading, re-run `cvm init` in each shell configuration to install the
+auto-activation hook.
+
+If you prefer [direnv](https://direnv.net/), an optional `.envrc` equivalent
+can consume the activation resolver's `KEY=VALUE` output:
+
+```sh
+while IFS='=' read -r key value; do
+  export "$key=$value"
+done < <(cvm __resolve-activate project-backend-api)
+PATH="$CLAUDE_CONFIG_DIR/bin:$PATH"
+export PATH
+```
 
 ## Sharing Environments (`cvm.yaml`)
 

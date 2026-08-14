@@ -37,4 +37,53 @@ mod tests {
             assert!(script.contains("bin"));
         }
     }
+
+    #[test]
+    fn all_shell_hooks_auto_activate_from_dot_cvm() {
+        for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Powershell] {
+            let script = generate(shell);
+            assert!(script.contains("__cvm_auto_check"));
+            assert!(script.contains(".cvm"));
+            assert!(!script.contains(".cvm-env"));
+            assert!(script.contains("CVM_AUTO"));
+            assert!(script.contains("CVM_AUTO_ROOT"));
+            assert!(script.contains("CVM_AUTO_LAST_PWD"));
+        }
+    }
+
+    #[test]
+    fn all_shell_hooks_unpin_auto_activation_after_manual_use() {
+        assert!(generate(Shell::Bash).contains("unset CVM_AUTO CVM_AUTO_ROOT"));
+        assert!(generate(Shell::Zsh).contains("unset CVM_AUTO CVM_AUTO_ROOT"));
+        assert!(generate(Shell::Fish).contains("set -e CVM_AUTO_ROOT"));
+        assert!(generate(Shell::Powershell)
+            .contains("Remove-Item Env:CVM_AUTO_ROOT -ErrorAction SilentlyContinue"));
+    }
+
+    #[test]
+    fn auto_activation_uses_each_shells_directory_change_hook() {
+        assert!(generate(Shell::Bash).contains("PROMPT_COMMAND"));
+        assert!(generate(Shell::Zsh).contains("add-zsh-hook chpwd __cvm_auto_check"));
+        assert!(generate(Shell::Fish).contains("--on-variable PWD"));
+        assert!(generate(Shell::Powershell).contains("__cvm_auto_check"));
+    }
+
+    #[test]
+    fn bash_appends_prompt_hook_without_a_semicolon_separator() {
+        let script = generate(Shell::Bash);
+        assert!(script.contains("$'\\n__cvm_auto_check'"));
+        assert!(!script.contains("$PROMPT_COMMAND; }__cvm_auto_check"));
+    }
+
+    #[test]
+    fn powershell_compares_environment_names_and_paths_case_sensitively() {
+        let script = generate(Shell::Powershell);
+        assert!(script.contains("-ceq $currentPwd"));
+        assert!(script.contains("-cne $name"));
+    }
+
+    #[test]
+    fn powershell_ignores_non_filesystem_providers() {
+        assert!(generate(Shell::Powershell).contains("$PWD.Provider.Name -ne 'FileSystem'"));
+    }
 }
