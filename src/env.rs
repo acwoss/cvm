@@ -6,6 +6,7 @@ use std::process::{Command, ExitStatus};
 
 use anyhow::{bail, Context, Result};
 
+use crate::hooks;
 use crate::shims::{env_bin_dir, write_env_shims};
 
 /// Name of an environment's local dotenv file, relative to its directory.
@@ -111,6 +112,8 @@ pub fn create_env(
     } else {
         InheritStats::default()
     };
+
+    hooks::run_post_hook(&hooks::hooks_dir()?, "post-create", name, &dir);
 
     Ok((dir, credentials_copied, inherit_stats))
 }
@@ -616,6 +619,32 @@ mod tests {
             assert!(dir.join("skills").is_dir());
             assert!(dir.join("bin").is_dir());
             assert!(dir.join(".env").is_file());
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn create_env_runs_post_create_hook() {
+        with_temp_home(|home| {
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let hook = hooks_dir.join("post-create");
+            let marker = home.join("hook-ran.txt");
+            fs::write(
+                &hook,
+                format!(
+                    "#!/bin/sh\necho \"$CVM_HOOK_EVENT $CVM_ENV\" > {}\n",
+                    marker.display()
+                ),
+            )
+            .unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+
+            create_env("work", true, false).unwrap();
+
+            let contents = fs::read_to_string(&marker).unwrap();
+            assert_eq!(contents.trim(), "post-create work");
         });
     }
 

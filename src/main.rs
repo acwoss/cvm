@@ -1,5 +1,6 @@
 mod cli;
 mod env;
+mod hooks;
 mod manifest;
 mod shell;
 mod shims;
