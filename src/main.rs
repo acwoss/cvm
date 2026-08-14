@@ -1,5 +1,6 @@
 mod cli;
 mod env;
+mod hooks;
 mod manifest;
 mod shell;
 mod shims;
@@ -101,7 +102,7 @@ fn run() -> Result<()> {
         Command::Export { env_name, output } => cmd_export(env_name, output)?,
         Command::Import { file, name } => cmd_import(file, name)?,
         Command::ResolveActivate { env_name } => cmd_resolve_activate(&env_name)?,
-        Command::ResolveDeactivate => cmd_resolve_deactivate(),
+        Command::ResolveDeactivate => cmd_resolve_deactivate()?,
     }
 
     Ok(())
@@ -254,7 +255,7 @@ fn cmd_import(file: PathBuf, name: Option<String>) -> Result<()> {
 
     let dir = env::env_dir(&env_name)?;
     if !dir.exists() {
-        env::create_env(&env_name, false, false)?;
+        env::create_env_without_hook(&env_name, false, false)?;
     }
     manifest::apply_manifest(&manifest, &dir)?;
 
@@ -282,8 +283,9 @@ fn cmd_resolve_activate(env_name: &str) -> Result<()> {
     Ok(())
 }
 
-fn cmd_resolve_deactivate() {
-    for var in env::resolve_deactivate() {
+fn cmd_resolve_deactivate() -> Result<()> {
+    for var in env::resolve_deactivate()? {
         println!("{var}");
     }
+    Ok(())
 }

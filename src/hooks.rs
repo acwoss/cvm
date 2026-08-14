@@ -1,0 +1,192 @@
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use anyhow::{bail, Context, Result};
+
+/// Directory holding global lifecycle hook scripts (`~/.cvm/hooks`), one
+/// file per event, shared by every environment.
+pub fn hooks_dir() -> Result<PathBuf> {
+    Ok(crate::env::cvm_home()?.join("hooks"))
+}
+
+/// Path of `event`'s hook script inside `hooks_dir`: extensionless on Unix
+/// (needs `chmod +x` and a shebang), `<event>.cmd` on Windows - the same
+/// per-platform convention already used for environment shims in `bin/`.
+fn hook_path(hooks_dir: &Path, event: &str) -> PathBuf {
+    if cfg!(windows) {
+        hooks_dir.join(format!("{event}.cmd"))
+    } else {
+        hooks_dir.join(event)
+    }
+}
+
+/// Runs `event`'s hook if present in `hooks_dir`, propagating any failure.
+/// For `pre-*` events: a failing hook must abort the operation in progress.
+pub fn run_pre_hook(hooks_dir: &Path, event: &str, env_name: &str, env_dir: &Path) -> Result<()> {
+    execute_hook(hooks_dir, event, env_name, env_dir)
+}
+
+/// Runs `event`'s hook if present in `hooks_dir`, only warning on failure.
+/// For `post-*` events: the operation already completed, so a failing hook
+/// must not be treated as a `cvm` failure.
+pub fn run_post_hook(hooks_dir: &Path, event: &str, env_name: &str, env_dir: &Path) {
+    if let Err(err) = execute_hook(hooks_dir, event, env_name, env_dir) {
+        eprintln!("warning: {err:#}");
+    }
+}
+
+fn execute_hook(hooks_dir: &Path, event: &str, env_name: &str, env_dir: &Path) -> Result<()> {
+    let path = hook_path(hooks_dir, event);
+    if !path.is_file() {
+        return Ok(());
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&path)
+            .with_context(|| format!("failed to stat hook {}", path.display()))?
+            .permissions()
+            .mode();
+        if mode & 0o111 == 0 {
+            eprintln!(
+                "warning: hook {} exists but is not executable (chmod +x it to enable), skipping",
+                path.display()
+            );
+            return Ok(());
+        }
+    }
+
+    let mut cmd = if cfg!(windows) {
+        let mut c = Command::new("cmd");
+        c.arg("/C").arg(&path);
+        c
+    } else {
+        Command::new(&path)
+    };
+
+    cmd.env("CVM_HOOK_EVENT", event)
+        .env("CVM_ENV", env_name)
+        .env("CVM_ENV_PATH", env_dir)
+        // Prevent hook stdout from leaking into the __resolve-activate/__resolve-deactivate
+        // parsed KEY=VALUE stream that the shell wrapper captures via command substitution.
+        .stdout(std::process::Stdio::null());
+
+    let status = cmd
+        .status()
+        .with_context(|| format!("failed to execute hook {}", path.display()))?;
+
+    if !status.success() {
+        bail!("hook '{event}' ({}) exited with {status}", path.display());
+    }
+    Ok(())
+}
+
+/// Serializes tests that write an executable hook file and then spawn it.
+///
+/// `cargo test` runs tests as parallel threads of one process, which opens the
+/// classic fork/exec race: while thread A holds a write fd on its freshly
+/// written hook, thread B forks, the child inherits that fd, and A's `exec` of
+/// the script fails with `ETXTBSY` ("Text file busy") until the child reaches
+/// its own `exec`. `O_CLOEXEC` cannot help - that window *is* the pre-exec
+/// window. Holding this guard across the whole write-then-spawn section keeps
+/// the two off each other.
+///
+/// `pub(crate)` so `env.rs`'s tests can take it around `create_env` and the
+/// other lifecycle calls that spawn hooks. It is independent of `env.rs`'s
+/// `HOME_LOCK` (which guards `HOME`/`CVM_HOME` mutation, not spawning); when a
+/// test needs both, take `HOME_LOCK` first - via `with_temp_home` - and this
+/// one inside, so the ordering is the same everywhere.
+#[cfg(test)]
+pub(crate) static EXEC_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn write_unix_hook(path: &Path, script: &str) {
+        fs::write(path, script).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+    }
+
+    #[test]
+    fn missing_hook_is_ignored() {
+        let dir = tempfile::tempdir().unwrap();
+        execute_hook(dir.path(), "pre-activate", "work", Path::new("/envs/work")).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn hook_receives_expected_env_vars() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let out_file = dir.path().join("out.txt");
+        let hook = hook_path(dir.path(), "post-create");
+        write_unix_hook(
+            &hook,
+            &format!(
+                "#!/bin/sh\necho \"$CVM_HOOK_EVENT|$CVM_ENV|$CVM_ENV_PATH\" > {}\n",
+                out_file.display()
+            ),
+        );
+
+        execute_hook(dir.path(), "post-create", "work", Path::new("/envs/work")).unwrap();
+
+        let contents = fs::read_to_string(&out_file).unwrap();
+        assert_eq!(contents.trim(), "post-create|work|/envs/work");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn execute_hook_propagates_nonzero_exit() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let hook = hook_path(dir.path(), "pre-remove");
+        write_unix_hook(&hook, "#!/bin/sh\nexit 1\n");
+
+        let err =
+            execute_hook(dir.path(), "pre-remove", "work", Path::new("/envs/work")).unwrap_err();
+        assert!(err.to_string().contains("pre-remove"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn non_executable_hook_is_skipped() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let hook = hook_path(dir.path(), "post-create");
+        fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&hook, fs::Permissions::from_mode(0o644)).unwrap();
+
+        execute_hook(dir.path(), "post-create", "work", Path::new("/envs/work")).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_pre_hook_propagates_failure() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let hook = hook_path(dir.path(), "pre-remove");
+        write_unix_hook(&hook, "#!/bin/sh\nexit 1\n");
+
+        assert!(run_pre_hook(dir.path(), "pre-remove", "work", Path::new("/envs/work")).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_post_hook_swallows_failure() {
+        let _guard = EXEC_TEST_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let hook = hook_path(dir.path(), "post-remove");
+        write_unix_hook(&hook, "#!/bin/sh\nexit 1\n");
+
+        // Must not panic - failure is only printed to stderr.
+        run_post_hook(dir.path(), "post-remove", "work", Path::new("/envs/work"));
+    }
+}
