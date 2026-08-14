@@ -231,6 +231,17 @@ To create an environment and open Claude Code in it right away:
 cvm create work --open
 ```
 
+To seed a new environment with your global skills and settings:
+
+```sh
+cvm create work --inherit
+```
+
+`--inherit` links each skill from `~/.claude/skills` into the environment
+(falling back to a recursive copy when links are unavailable) and copies
+`~/.claude/settings.json` when present. The new environment remains independent
+after creation except for skills that were successfully linked.
+
 `cvm create` copies your global Claude Code credentials
 (`~/.claude/.credentials.json`) into the new environment if that file
 exists, so `claude` above doesn't prompt you to log in again. Everything
@@ -335,7 +346,7 @@ cvm use project-backend-api
 |---------------------------------------|--------------|-------------------------------------------------------------------------------|
 | `cvm init <shell>`                    | —            | Prints shell integration hooks for `bash`, `zsh`, `fish`, or `powershell`.    |
 | `cvm update`                          | —            | Checks GitHub Releases for a newer version and replaces the running binary in place. |
-| `cvm create <env> [--anonymous] [--open]` | —        | Creates a new isolated environment at `~/.cvm/envs/<env>`, reusing global Claude Code credentials unless `--anonymous` is passed. Pass `--open` to launch Claude Code in the new environment immediately. |
+| `cvm create <env> [--anonymous] [--inherit] [--open]` | — | Creates a new isolated environment at `~/.cvm/envs/<env>`, reusing global credentials unless `--anonymous` is passed. `--inherit` links global skills and copies global settings; `--open` launches Claude Code immediately. |
 | `cvm list`                            | `ls`         | Lists all environments, highlighting the active one.                         |
 | `cvm use <env>`                       | `activate`   | Activates `<env>` in the current shell session (needs shell integration).    |
 | `cvm deactivate`                      | —            | Restores the default global Claude Code setup (needs shell integration).     |

@@ -34,9 +34,11 @@ fn run() -> Result<()> {
         Command::Create {
             env_name,
             anonymous,
+            inherit,
             open,
         } => {
-            let (dir, credentials_copied) = env::create_env(&env_name, anonymous)?;
+            let (dir, credentials_copied, inherit_stats) =
+                env::create_env(&env_name, anonymous, inherit)?;
             println!(
                 "{} environment '{}' created at {}",
                 "✓".green(),
@@ -57,6 +59,21 @@ fn run() -> Result<()> {
                 println!(
                     "{}",
                     "No global Claude Code credentials found to reuse; log in when ready.".dimmed()
+                );
+            }
+            if inherit {
+                let settings = if inherit_stats.settings_copied {
+                    "settings.json copied"
+                } else {
+                    "settings.json not found"
+                };
+                println!(
+                    "{}",
+                    format!(
+                        "Inherited global assets: {} skills linked, {} copied; {settings}.",
+                        inherit_stats.skills_linked, inherit_stats.skills_copied
+                    )
+                    .dimmed()
                 );
             }
             if open {
@@ -237,7 +254,7 @@ fn cmd_import(file: PathBuf, name: Option<String>) -> Result<()> {
 
     let dir = env::env_dir(&env_name)?;
     if !dir.exists() {
-        env::create_env(&env_name, false)?;
+        env::create_env(&env_name, false, false)?;
     }
     manifest::apply_manifest(&manifest, &dir)?;
 

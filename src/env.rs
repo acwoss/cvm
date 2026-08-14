@@ -25,6 +25,13 @@ pub const CONFIG_DIR_VAR: &str = "CLAUDE_CONFIG_DIR";
 /// and statusline integrations can read it the same way.
 pub const ACTIVE_ENV_VAR: &str = "CVM_ENV";
 
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct InheritStats {
+    pub skills_linked: usize,
+    pub skills_copied: usize,
+    pub settings_copied: bool,
+}
+
 pub fn cvm_home() -> Result<PathBuf> {
     if let Some(home) = env::var_os("CVM_HOME").filter(|value| !value.is_empty()) {
         return Ok(PathBuf::from(home));
@@ -66,8 +73,13 @@ pub fn active_env() -> Option<String> {
 /// Creates a new, empty environment directory. Unless `anonymous` is set,
 /// also copies the global Claude Code credentials file into it (if one
 /// exists) so the new environment starts out already logged in. Returns the
-/// environment directory and whether credentials were copied.
-pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
+/// environment directory, whether credentials were copied, and inheritance
+/// statistics.
+pub fn create_env(
+    name: &str,
+    anonymous: bool,
+    inherit: bool,
+) -> Result<(PathBuf, bool, InheritStats)> {
     let dir = env_dir(name)?;
     if dir.exists() {
         bail!("environment '{name}' already exists at {}", dir.display());
@@ -81,8 +93,13 @@ pub fn create_env(name: &str, anonymous: bool) -> Result<(PathBuf, bool)> {
     };
 
     ensure_env_layout(&dir)?;
+    let inherit_stats = if inherit {
+        inherit_from_global(&dir)?
+    } else {
+        InheritStats::default()
+    };
 
-    Ok((dir, credentials_copied))
+    Ok((dir, credentials_copied, inherit_stats))
 }
 
 /// Ensures an environment directory has the standard layout: `skills/`, `bin/`,
@@ -91,6 +108,95 @@ pub fn ensure_env_layout(dir: &Path) -> Result<()> {
     fs::create_dir_all(dir.join("skills"))?;
     ensure_env_bin(dir)?;
     let _ = ensure_dotenv_file(dir)?;
+    Ok(())
+}
+
+pub fn inherit_from_global(env_dir: &Path) -> Result<InheritStats> {
+    let global = global_claude_dir()?;
+    let mut stats = InheritStats::default();
+    let skills_src = global.join("skills");
+    let skills_dst = env_dir.join("skills");
+    fs::create_dir_all(&skills_dst)?;
+
+    if skills_src.is_dir() {
+        for entry in fs::read_dir(&skills_src)
+            .with_context(|| format!("failed to read {}", skills_src.display()))?
+        {
+            let entry = entry?;
+            let source = entry.path();
+            if !source.is_dir() {
+                continue;
+            }
+            let dest = skills_dst.join(entry.file_name());
+            if dest.exists() {
+                continue;
+            }
+            match symlink_dir_or_copy(&source, &dest)? {
+                LinkKind::Symlink => stats.skills_linked += 1,
+                LinkKind::Copy => stats.skills_copied += 1,
+            }
+        }
+    }
+
+    let settings_src = global.join("settings.json");
+    let settings_dst = env_dir.join("settings.json");
+    if settings_src.is_file() && !settings_dst.exists() {
+        fs::copy(&settings_src, &settings_dst).with_context(|| {
+            format!(
+                "failed to copy {} to {}",
+                settings_src.display(),
+                settings_dst.display()
+            )
+        })?;
+        stats.settings_copied = true;
+    }
+
+    Ok(stats)
+}
+
+enum LinkKind {
+    Symlink,
+    Copy,
+}
+
+fn symlink_dir_or_copy(source: &Path, dest: &Path) -> Result<LinkKind> {
+    if create_dir_symlink(source, dest).is_ok() {
+        return Ok(LinkKind::Symlink);
+    }
+    copy_dir_recursive(source, dest)?;
+    Ok(LinkKind::Copy)
+}
+
+#[cfg(unix)]
+fn create_dir_symlink(source: &Path, dest: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(source, dest)
+}
+
+#[cfg(windows)]
+fn create_dir_symlink(source: &Path, dest: &Path) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_dir(source, dest)
+}
+
+fn copy_dir_recursive(source: &Path, dest: &Path) -> Result<()> {
+    fs::create_dir_all(dest).with_context(|| format!("failed to create {}", dest.display()))?;
+    for entry in
+        fs::read_dir(source).with_context(|| format!("failed to read {}", source.display()))?
+    {
+        let entry = entry?;
+        let entry_source = entry.path();
+        let entry_dest = dest.join(entry.file_name());
+        if entry_source.is_dir() {
+            copy_dir_recursive(&entry_source, &entry_dest)?;
+        } else {
+            fs::copy(&entry_source, &entry_dest).with_context(|| {
+                format!(
+                    "failed to copy {} to {}",
+                    entry_source.display(),
+                    entry_dest.display()
+                )
+            })?;
+        }
+    }
     Ok(())
 }
 
@@ -486,10 +592,34 @@ mod tests {
     #[test]
     fn create_env_creates_skills_bin_and_dotenv() {
         with_temp_home(|| {
-            let (dir, _) = create_env("work", true).unwrap();
+            let (dir, _, _) = create_env("work", true, false).unwrap();
             assert!(dir.join("skills").is_dir());
             assert!(dir.join("bin").is_dir());
             assert!(dir.join(".env").is_file());
+        });
+    }
+
+    #[test]
+    fn create_env_inherits_global_skills_and_settings_when_requested() {
+        with_temp_home(|| {
+            let global = global_claude_dir().unwrap();
+            let skill = global.join("skills/example");
+            fs::create_dir_all(&skill).unwrap();
+            fs::write(skill.join("SKILL.md"), "# Example\n").unwrap();
+            fs::write(global.join("settings.json"), "{\"theme\":\"dark\"}").unwrap();
+
+            let (dir, _, stats) = create_env("work", true, true).unwrap();
+
+            assert_eq!(stats.skills_linked + stats.skills_copied, 1);
+            assert!(stats.settings_copied);
+            assert_eq!(
+                fs::read_to_string(dir.join("skills/example/SKILL.md")).unwrap(),
+                "# Example\n"
+            );
+            assert_eq!(
+                fs::read_to_string(dir.join("settings.json")).unwrap(),
+                "{\"theme\":\"dark\"}"
+            );
         });
     }
 
