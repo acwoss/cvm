@@ -94,6 +94,29 @@ pub fn create_env(
     anonymous: bool,
     inherit: bool,
 ) -> Result<(PathBuf, bool, InheritStats)> {
+    let result = create_env_impl(name, anonymous, inherit)?;
+    hooks::run_post_hook(&hooks::hooks_dir()?, "post-create", name, &result.0);
+    Ok(result)
+}
+
+/// Like `create_env`, but never fires the `post-create` hook. Used by `cvm
+/// import` when it needs to create the target environment first: the plan
+/// and design spec both list `cvm import` as a command that never triggers
+/// hooks (only `cvm create` does), so importing into a brand-new environment
+/// must not run `post-create`.
+pub fn create_env_without_hook(
+    name: &str,
+    anonymous: bool,
+    inherit: bool,
+) -> Result<(PathBuf, bool, InheritStats)> {
+    create_env_impl(name, anonymous, inherit)
+}
+
+fn create_env_impl(
+    name: &str,
+    anonymous: bool,
+    inherit: bool,
+) -> Result<(PathBuf, bool, InheritStats)> {
     let dir = env_dir(name)?;
     if dir.exists() {
         bail!("environment '{name}' already exists at {}", dir.display());
@@ -112,8 +135,6 @@ pub fn create_env(
     } else {
         InheritStats::default()
     };
-
-    hooks::run_post_hook(&hooks::hooks_dir()?, "post-create", name, &dir);
 
     Ok((dir, credentials_copied, inherit_stats))
 }
@@ -593,21 +614,49 @@ mod tests {
         });
     }
 
+    #[cfg(unix)]
     #[test]
     fn resolve_deactivate_skips_hooks_when_no_env_active() {
-        with_temp_home(|_home| {
+        with_temp_home(|home| {
+            let _exec_guard = hooks::EXEC_TEST_LOCK.lock().unwrap();
+            // SAFETY: guarded by HOME_LOCK (held for the whole with_temp_home closure).
+            unsafe {
+                env::remove_var(ACTIVE_ENV_VAR);
+            }
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let marker = home.join("hook-log.txt");
+            let hook = hooks_dir.join("pre-deactivate");
+            fs::write(
+                &hook,
+                format!(
+                    "#!/bin/sh\necho \"pre-deactivate $CVM_ENV\" >> {}\n",
+                    marker.display()
+                ),
+            )
+            .unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+
             // No CVM_ENV set - resolve_deactivate must not error and must not
-            // try to resolve any hook.
+            // try to run any hook.
             let vars = resolve_deactivate().unwrap();
             assert!(vars.contains(&CONFIG_DIR_VAR.to_string()));
+            assert!(
+                !marker.exists(),
+                "pre-deactivate hook must not run when no environment is active"
+            );
         });
     }
 
     #[test]
     fn deactivate_unsets_both_vars() {
-        let vars = resolve_deactivate().unwrap();
-        assert!(vars.contains(&CONFIG_DIR_VAR.to_string()));
-        assert!(vars.contains(&ACTIVE_ENV_VAR.to_string()));
+        with_temp_home(|_home| {
+            let _exec_guard = hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let vars = resolve_deactivate().unwrap();
+            assert!(vars.contains(&CONFIG_DIR_VAR.to_string()));
+            assert!(vars.contains(&ACTIVE_ENV_VAR.to_string()));
+        });
     }
 
     #[test]
@@ -756,6 +805,35 @@ mod tests {
 
             let contents = fs::read_to_string(&marker).unwrap();
             assert_eq!(contents.trim(), "post-create work");
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn create_env_without_hook_does_not_run_post_create_hook() {
+        with_temp_home(|home| {
+            let _exec_guard = crate::hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let hooks_dir = home.join(".cvm").join("hooks");
+            fs::create_dir_all(&hooks_dir).unwrap();
+            let hook = hooks_dir.join("post-create");
+            let marker = home.join("hook-ran.txt");
+            fs::write(
+                &hook,
+                format!(
+                    "#!/bin/sh\necho \"$CVM_HOOK_EVENT $CVM_ENV\" > {}\n",
+                    marker.display()
+                ),
+            )
+            .unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+
+            create_env_without_hook("work", true, false).unwrap();
+
+            assert!(
+                !marker.exists(),
+                "post-create hook must not run via create_env_without_hook"
+            );
         });
     }
 

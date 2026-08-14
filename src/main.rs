@@ -255,7 +255,7 @@ fn cmd_import(file: PathBuf, name: Option<String>) -> Result<()> {
 
     let dir = env::env_dir(&env_name)?;
     if !dir.exists() {
-        env::create_env(&env_name, false, false)?;
+        env::create_env_without_hook(&env_name, false, false)?;
     }
     manifest::apply_manifest(&manifest, &dir)?;
 
