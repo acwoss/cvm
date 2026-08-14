@@ -212,6 +212,12 @@ cvm use work
 claude   # runs against ~/.cvm/envs/work instead of ~/.claude
 ```
 
+To create an environment and open Claude Code in it right away:
+
+```sh
+cvm create work --open
+```
+
 `cvm create` copies your global Claude Code credentials
 (`~/.claude/.credentials.json`) into the new environment if that file
 exists, so `claude` above doesn't prompt you to log in again. Everything
@@ -316,7 +322,7 @@ cvm use project-backend-api
 |---------------------------------------|--------------|-------------------------------------------------------------------------------|
 | `cvm init <shell>`                    | —            | Prints shell integration hooks for `bash`, `zsh`, `fish`, or `powershell`.    |
 | `cvm update`                          | —            | Checks GitHub Releases for a newer version and replaces the running binary in place. |
-| `cvm create <env> [--anonymous]`      | —            | Creates a new isolated environment at `~/.cvm/envs/<env>`, reusing global Claude Code credentials unless `--anonymous` is passed. |
+| `cvm create <env> [--anonymous] [--open]` | —        | Creates a new isolated environment at `~/.cvm/envs/<env>`, reusing global Claude Code credentials unless `--anonymous` is passed. Pass `--open` to launch Claude Code in the new environment immediately. |
 | `cvm list`                            | `ls`         | Lists all environments, highlighting the active one.                         |
 | `cvm use <env>`                       | `activate`   | Activates `<env>` in the current shell session (needs shell integration).    |
 | `cvm deactivate`                      | —            | Restores the default global Claude Code setup (needs shell integration).     |

@@ -32,7 +32,8 @@ pub enum Command {
     /// By default, copies the global Claude Code credentials
     /// (`~/.claude/.credentials.json`) into the new environment so it starts
     /// out already logged in. Pass `--anonymous` to skip that and create a
-    /// completely empty environment instead.
+    /// completely empty environment instead. Pass `--open` to launch Claude
+    /// Code in the new environment immediately after creation.
     Create {
         /// Name of the environment to create
         env_name: String,
@@ -40,6 +41,10 @@ pub enum Command {
         /// Do not copy the global Claude Code credentials into the new environment
         #[arg(long)]
         anonymous: bool,
+
+        /// After creating the environment, open Claude Code in it
+        #[arg(long)]
+        open: bool,
     },
 
     /// List all available environments, highlighting the active one

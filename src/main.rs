@@ -33,6 +33,7 @@ fn run() -> Result<()> {
         Command::Create {
             env_name,
             anonymous,
+            open,
         } => {
             let (dir, credentials_copied) = env::create_env(&env_name, anonymous)?;
             println!(
@@ -56,6 +57,10 @@ fn run() -> Result<()> {
                     "{}",
                     "No global Claude Code credentials found to reuse; log in when ready.".dimmed()
                 );
+            }
+            if open {
+                let code = env::open_env(&env_name)?;
+                std::process::exit(code);
             }
         }
         Command::List => cmd_list()?,
