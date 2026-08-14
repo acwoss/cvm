@@ -198,6 +198,28 @@
     .dynamic-card { background: var(--c-card); border: 1px solid var(--c-border); }
     .dynamic-surface { background: var(--c-surface); border: 1px solid var(--c-border); }
     .dynamic-code { background: var(--c-code-bg); border: 1px solid var(--c-border); color: var(--c-text); }
+
+    /* OS install selector */
+    .os-tabs { display: flex; gap: 6px; }
+    .os-tab {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--c-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .os-tab:hover { color: var(--c-text); border-color: var(--c-border-hover); }
+    .os-tab.active {
+      background: rgba(56,189,248,0.1);
+      border-color: rgba(56,189,248,0.3);
+      color: #38bdf8;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body class="theme-transition">
@@ -299,13 +321,20 @@
           Isolate configs, credentials, MCP server registrations, and memories per project. Share setups with your team via <code class="font-mono dynamic-code" style="font-size: 0.85rem; padding: 1px 6px; border-radius: 4px;">cvm.yaml</code> without ever leaking tokens or history.
         </p>
 
+        <!-- Install OS selector -->
+        <div class="os-tabs" data-install-group="hero" style="margin-bottom: 10px;">
+          <button class="os-tab" data-os="linux">Linux</button>
+          <button class="os-tab" data-os="mac">macOS</button>
+          <button class="os-tab" data-os="windows">Windows</button>
+        </div>
+
         <!-- Install box -->
         <div class="dynamic-surface" style="display: flex; align-items: center; gap: 12px; border-radius: 10px; padding: 10px 12px 10px 16px; margin-bottom: 24px;">
           <span style="color: #38bdf8; flex-shrink: 0; display: flex;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
           </span>
-          <code class="font-mono" style="font-size: 0.78125rem; color: var(--c-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash</code>
-          <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash" style="background: rgba(128,128,128,0.08); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--c-muted); display: flex; align-items: center; gap: 6px; font-size: 0.75rem; flex-shrink: 0; transition: all 0.15s ease;">
+          <code class="font-mono install-cmd-text" style="font-size: 0.78125rem; color: var(--c-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">curl -fsSL https://getcvm.com/install.sh | bash</code>
+          <button class="copy-btn install-copy-btn" data-copy="curl -fsSL https://getcvm.com/install.sh | bash" style="background: rgba(128,128,128,0.08); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--c-muted); display: flex; align-items: center; gap: 6px; font-size: 0.75rem; flex-shrink: 0; transition: all 0.15s ease;">
             <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
             <span class="copy-text">Copy</span>
           </button>
@@ -538,10 +567,15 @@
       </a>
       <a href="documentation/" class="btn-ghost" style="font-size: 0.9375rem; padding: 0.625rem 1.5rem;">Read the Docs</a>
     </div>
+    <div class="os-tabs" data-install-group="cta" style="justify-content: center; margin-bottom: 10px;">
+      <button class="os-tab" data-os="linux">Linux</button>
+      <button class="os-tab" data-os="mac">macOS</button>
+      <button class="os-tab" data-os="windows">Windows</button>
+    </div>
     <div class="dynamic-surface" style="display: inline-flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 16px;">
       <span style="color: var(--c-faint); font-size: 0.78125rem;">$</span>
-      <code class="font-mono" style="font-size: 0.78125rem; color: var(--c-muted);">curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash</code>
-      <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash" style="background: rgba(128,128,128,0.08); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--c-muted); display: flex; align-items: center; gap: 6px; font-size: 0.75rem; flex-shrink: 0; transition: all 0.15s ease;">
+      <code class="font-mono install-cmd-text" style="font-size: 0.78125rem; color: var(--c-muted);">curl -fsSL https://getcvm.com/install.sh | bash</code>
+      <button class="copy-btn install-copy-btn" data-copy="curl -fsSL https://getcvm.com/install.sh | bash" style="background: rgba(128,128,128,0.08); border: 1px solid var(--c-border); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--c-muted); display: flex; align-items: center; gap: 6px; font-size: 0.75rem; flex-shrink: 0; transition: all 0.15s ease;">
         <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
         <span class="copy-text">Copy</span>
       </button>
@@ -812,6 +846,35 @@
         }, step.delay);
       });
     }
+
+    // ─── OS Install Selector ─────────────────────────────────────────────────────
+    const INSTALL_COMMANDS = {
+      linux: 'curl -fsSL https://getcvm.com/install.sh | bash',
+      mac: 'curl -fsSL https://getcvm.com/install.sh | bash',
+      windows: 'powershell -c "irm https://getcvm.com/install.ps1 | iex"',
+    };
+
+    function detectOS() {
+      const ua = navigator.userAgent || '';
+      if (/Win/i.test(ua)) return 'windows';
+      if (/Mac/i.test(ua)) return 'mac';
+      return 'linux';
+    }
+
+    function setInstallOS(os) {
+      const cmd = INSTALL_COMMANDS[os] || INSTALL_COMMANDS.linux;
+      document.querySelectorAll('.os-tabs .os-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.os === os);
+      });
+      document.querySelectorAll('.install-cmd-text').forEach(el => { el.textContent = cmd; });
+      document.querySelectorAll('.install-copy-btn').forEach(btn => { btn.setAttribute('data-copy', cmd); });
+    }
+
+    document.querySelectorAll('.os-tab').forEach(btn => {
+      btn.addEventListener('click', () => setInstallOS(btn.dataset.os));
+    });
+
+    setInstallOS(detectOS());
 
     // ─── Copy Button Interactions ────────────────────────────────────────────────
     document.querySelectorAll('.copy-btn').forEach(btn => {

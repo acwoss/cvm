@@ -153,7 +153,7 @@ write(
     """
 <h2>1. Install</h2>
 <h3>One-line installer</h3>
-<pre><code>curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash</code></pre>
+<pre><code>curl -fsSL https://getcvm.com/install.sh | bash</code></pre>
 <p>Downloads the platform binary to <code>~/.cvm/bin</code> and can append PATH + hook lines to your shell rc.</p>
 <h3>From a GitHub Release</h3>
 <p>Download the archive for your OS from the <a href="https://github.com/acwoss/cvm/releases">Releases page</a>, extract it, and put <code>cvm</code> on your <code>PATH</code>.</p>

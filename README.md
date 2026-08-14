@@ -54,14 +54,23 @@ history.
 
 ### One-line install script
 
+Linux / macOS:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash
+curl -fsSL https://getcvm.com/install.sh | bash
+```
+
+Windows (PowerShell):
+
+```powershell
+powershell -c "irm https://getcvm.com/install.ps1 | iex"
 ```
 
 This downloads the right prebuilt binary for your OS/architecture, installs
-it to `~/.cvm/bin`, and appends the PATH + shell-hook lines to your shell rc
-file (see [Shell Integration Setup](#shell-integration-setup) if you'd rather
-do that by hand).
+it to `~/.cvm/bin` (`%USERPROFILE%\.cvm\bin` on Windows), and appends the
+PATH + shell-hook lines to your shell rc file / PowerShell profile (see
+[Shell Integration Setup](#shell-integration-setup) if you'd rather do that
+by hand).
 
 ### From a release binary
 
