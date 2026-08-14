@@ -301,6 +301,24 @@ pub fn edit_env(name: &str) -> Result<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    /// Serializes tests that temporarily override `$HOME` / `$USERPROFILE`.
+    static HOME_LOCK: Mutex<()> = Mutex::new(());
+
+    fn with_temp_home<F: FnOnce()>(f: F) {
+        let _guard = HOME_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+        let prev = env::var(key).ok();
+        // SAFETY: guarded by HOME_LOCK so no other test reads home_dir concurrently.
+        unsafe { env::set_var(key, home.path()) };
+        f();
+        match prev {
+            Some(v) => unsafe { env::set_var(key, v) },
+            None => unsafe { env::remove_var(key) },
+        }
+    }
 
     #[test]
     fn rejects_path_traversal_names() {
@@ -393,12 +411,22 @@ mod tests {
     }
 
     #[test]
-    fn create_env_creates_skills_bin_and_dotenv() {
+    fn ensure_env_layout_creates_skills_bin_and_dotenv() {
         let dir = tempfile::tempdir().unwrap();
         ensure_env_layout(dir.path()).unwrap();
         assert!(dir.path().join("skills").is_dir());
         assert!(dir.path().join("bin").is_dir());
         assert!(dir.path().join(".env").is_file());
+    }
+
+    #[test]
+    fn create_env_creates_skills_bin_and_dotenv() {
+        with_temp_home(|| {
+            let (dir, _) = create_env("work", true).unwrap();
+            assert!(dir.join("skills").is_dir());
+            assert!(dir.join("bin").is_dir());
+            assert!(dir.join(".env").is_file());
+        });
     }
 
     #[test]
