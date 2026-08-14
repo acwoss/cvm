@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core concepts — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/docs.css" />
+</head>
+<body data-page="concepts" data-depth="0">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">Concepts</div>
+      <h1>Core concepts</h1>
+      <p class="docs-lead">How cvm maps onto Claude Code configuration without modifying Claude Code itself.</p>
+
+<h2>CLAUDE_CONFIG_DIR</h2>
+<p>Claude Code locates its config via <code>CLAUDE_CONFIG_DIR</code> (default <code>~/.claude</code>). cvm sets that variable to <code>~/.cvm/envs/&lt;name&gt;</code> while an environment is active or for a single <code>run</code>/<code>open</code> child process.</p>
+<h2>CVM_ENV</h2>
+<p>Process-scoped name of the active environment. Used by <code>cvm current</code>, <code>cvm list</code>, and statusline scripts.</p>
+<h2>Activation protocol</h2>
+<p>The compiled binary cannot change the parent shell. Hidden resolvers print data the hook applies:</p>
+<ul>
+  <li><code>cvm __resolve-activate &lt;env&gt;</code> → <code>KEY=VALUE</code> lines (dotenv + <code>CLAUDE_CONFIG_DIR</code> + <code>CVM_ENV</code>)</li>
+  <li><code>cvm __resolve-deactivate</code> → names to unset</li>
+</ul>
+<p>Shell hooks additionally:</p>
+<ul>
+  <li>Prefix the prompt with <code>(env)</code></li>
+  <li>Backup <code>PATH</code> in <code>CVM_OLD_PATH</code> and prepend <code>$CLAUDE_CONFIG_DIR/bin</code></li>
+  <li>Watch for project <code>.cvm</code> files (auto-activate)</li>
+  <li>Deactivate the previous env before switching, so dotenv keys do not leak</li>
+</ul>
+<div class="callout warn"><strong>Reserved dotenv keys</strong> — <code>PATH</code>, <code>PS1</code>, <code>CLAUDE_CONFIG_DIR</code>, and any <code>CVM_*</code> key in an environment <code>.env</code> are ignored so activation state cannot be poisoned.</div>
+<h2>Directory layout</h2>
+<pre><code>~/.cvm/
+├── bin/                  # cvm binary (install.sh)
+└── envs/
+    └── work/             # = CLAUDE_CONFIG_DIR when active
+        ├── .env
+        ├── skills/
+        ├── bin/          # claude + skills shims
+        ├── settings.json
+        └── ...           # whatever Claude Code writes</code></pre>
+<h2>Shims</h2>
+<p>Each env ships <code>bin/claude</code> and <code>bin/skills</code> (plus <code>.cmd</code> on Windows). They set <code>CLAUDE_CONFIG_DIR</code>/<code>CVM_ENV</code> from their parent directory, strip their own <code>bin</code> from <code>PATH</code> to avoid recursion, then exec the real tool. The skills shim runs <code>npx --yes skills</code>.</p>
+<h2>cvm.yaml surface</h2>
+<p>Export/import only touch <code>settings.json</code> (permissions + mcpServers), skill <em>names</em>, and <code>.env</code> <em>keys</em>. Credentials, history, and <code>.env</code> values are never read into the manifest.</p>
+
+      <div class="docs-pager">
+        <a href="getting-started.html"><span class="label">Previous</span><span class="title">Getting started</span></a>
+        <a class="next" href="commands.html"><span class="label">Next</span><span class="title">Command reference</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

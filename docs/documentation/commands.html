@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command reference — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/docs.css" />
+</head>
+<body data-page="commands" data-depth="0">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">Reference</div>
+      <h1>Command reference</h1>
+      <p class="docs-lead">Public CLI surface. Hidden resolvers used only by shell hooks are omitted.</p>
+
+<h2>Lifecycle</h2>
+<div class="docs-table-wrap"><table>
+<thead><tr><th>Command</th><th>Aliases</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>cvm init &lt;shell&gt;</code></td><td>—</td><td>Print hooks for <code>bash</code>, <code>zsh</code>, <code>fish</code>, or <code>powershell</code>.</td></tr>
+<tr><td><code>cvm update</code></td><td>—</td><td>Install the latest GitHub Release binary in place.</td></tr>
+<tr><td><code>cvm create &lt;env&gt; [--anonymous] [--inherit] [--open]</code></td><td>—</td><td>Create <code>~/.cvm/envs/&lt;env&gt;</code>. Copies global credentials unless <code>--anonymous</code>. <code>--inherit</code> links skills + copies settings. <code>--open</code> launches Claude immediately.</td></tr>
+<tr><td><code>cvm list</code></td><td><code>ls</code></td><td>List environments; mark the active one.</td></tr>
+<tr><td><code>cvm use &lt;env&gt;</code></td><td><code>activate</code></td><td>Activate in the current shell (needs hooks). Clears auto-pin (<code>CVM_AUTO</code>).</td></tr>
+<tr><td><code>cvm deactivate</code></td><td>—</td><td>Restore global Claude config, prompt, and PATH.</td></tr>
+<tr><td><code>cvm current</code></td><td>—</td><td>Print active environment name.</td></tr>
+<tr><td><code>cvm remove &lt;env&gt; [-y]</code></td><td><code>rm</code></td><td>Delete an environment. <code>-y/--yes</code> skips confirm.</td></tr>
+</tbody></table></div>
+<h2>Run &amp; edit</h2>
+<div class="docs-table-wrap"><table>
+<thead><tr><th>Command</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>cvm edit [env]</code></td><td>Open <code>.env</code> in <code>$VISUAL</code>/<code>$EDITOR</code> (default: active). Creates the file if missing.</td></tr>
+<tr><td><code>cvm run &lt;env&gt; -- &lt;cmd&gt;</code></td><td>Run a command with env context + <code>bin/</code> on PATH; parent shell unchanged.</td></tr>
+<tr><td><code>cvm open &lt;env&gt;</code></td><td>Alias for <code>cvm run &lt;env&gt; -- claude</code>. Safe to parallelize.</td></tr>
+</tbody></table></div>
+<h2>Share</h2>
+<div class="docs-table-wrap"><table>
+<thead><tr><th>Command</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>cvm export [env] [-o file]</code></td><td>Write YAML manifest (default env: active; default file: <code>cvm.yaml</code>). Never includes secret values.</td></tr>
+<tr><td><code>cvm import &lt;file&gt; [-n name]</code></td><td>Create/update an env from a manifest; blank <code>.env</code> placeholders for listed names.</td></tr>
+</tbody></table></div>
+<h2>create flags in depth</h2>
+<ul>
+  <li><strong>default</strong> — copy <code>~/.claude/.credentials.json</code> when present (file-backed platforms).</li>
+  <li><strong><code>--anonymous</code></strong> — skip credential copy; empty login state.</li>
+  <li><strong><code>--inherit</code></strong> — symlink (or copy) each <code>~/.claude/skills/*</code> entry; copy <code>settings.json</code> if present.</li>
+  <li><strong><code>--open</code></strong> — after a successful create, open Claude and exit with its status code.</li>
+</ul>
+<div class="callout warn"><strong>macOS note:</strong> credentials may live in the Keychain. If there is no <code>.credentials.json</code> file, create still succeeds but you may need to log in once per environment.</div>
+
+      <div class="docs-pager">
+        <a href="concepts.html"><span class="label">Previous</span><span class="title">Core concepts</span></a>
+        <a class="next" href="examples.html"><span class="label">Next</span><span class="title">Examples</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

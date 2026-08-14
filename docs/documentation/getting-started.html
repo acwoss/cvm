@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting started — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/docs.css" />
+</head>
+<body data-page="getting-started" data-depth="0">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">Start here</div>
+      <h1>Getting started</h1>
+      <p class="docs-lead">Install the binary, enable shell hooks, and create your first isolated Claude Code environment.</p>
+
+<h2>1. Install</h2>
+<h3>One-line installer</h3>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/acwoss/cvm/main/install.sh | bash</code></pre>
+<p>Downloads the platform binary to <code>~/.cvm/bin</code> and can append PATH + hook lines to your shell rc.</p>
+<h3>From a GitHub Release</h3>
+<p>Download the archive for your OS from the <a href="https://github.com/acwoss/cvm/releases">Releases page</a>, extract it, and put <code>cvm</code> on your <code>PATH</code>.</p>
+<h3>From source</h3>
+<pre><code>git clone https://github.com/acwoss/cvm.git
+cd cvm
+cargo install --path . --locked</code></pre>
+<h3>Update later</h3>
+<pre><code>cvm update</code></pre>
+<p>Pulls the latest release asset and replaces the running binary in place (needs <code>curl</code> and <code>tar</code>). Cargo installs should re-run <code>cargo install</code> instead.</p>
+<h2>2. Enable shell integration</h2>
+<p>Add the line for your shell, then restart or source the file:</p>
+<div class="docs-table-wrap">
+<table>
+  <thead><tr><th>Shell</th><th>File</th><th>Line</th></tr></thead>
+  <tbody>
+    <tr><td>Bash</td><td><code>~/.bashrc</code></td><td><code>eval "$(cvm init bash)"</code></td></tr>
+    <tr><td>Zsh</td><td><code>~/.zshrc</code></td><td><code>eval "$(cvm init zsh)"</code></td></tr>
+    <tr><td>Fish</td><td><code>~/.config/fish/config.fish</code></td><td><code>cvm init fish | source</code></td></tr>
+    <tr><td>PowerShell</td><td><code>$PROFILE</code></td><td><code>cvm init powershell | Out-String | Invoke-Expression</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>After upgrading cvm, re-run <code>cvm init</code> so you pick up prompt, PATH, and <code>.cvm</code> auto-activation hooks.</p>
+<h2>3. Create and activate an environment</h2>
+<pre><code>cvm create work
+cvm use work
+claude</code></pre>
+<p>While active you should see a <code>(work)</code> prompt prefix. <code>claude</code> and <code>skills</code> resolve through <code>~/.cvm/envs/work/bin</code> shims.</p>
+<pre><code>cvm current   # work
+cvm list      # * work (active)
+cvm deactivate</code></pre>
+<div class="callout"><strong>Skip activation for one shot:</strong> <code>cvm open work</code> or <code>cvm create work --open</code> launches Claude without changing the parent shell.</div>
+
+      <div class="docs-pager">
+        <a href="index.html"><span class="label">Previous</span><span class="title">Overview</span></a>
+        <a class="next" href="concepts.html"><span class="label">Next</span><span class="title">Core concepts</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

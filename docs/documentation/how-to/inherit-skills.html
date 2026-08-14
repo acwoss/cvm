@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inherit skills — cvm docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/docs.css" />
+</head>
+<body data-page="hto-inherit" data-depth="1">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">How-to</div>
+      <h1>Seed an environment from ~/.claude</h1>
+      <p class="docs-lead">Use --inherit when you want global skills/settings as a starting point without sharing the global config dir.</p>
+
+<ol class="steps">
+  <li>Ensure you have skills under <code>~/.claude/skills</code> and optionally <code>~/.claude/settings.json</code>.</li>
+  <li>Create with inherit:<pre><code>cvm create work --inherit</code></pre></li>
+  <li>cvm attempts to <strong>symlink</strong> each skill into <code>~/.cvm/envs/work/skills/</code>. If linking fails (common on some Windows setups), it <strong>copies</strong> recursively and continues.</li>
+  <li><code>settings.json</code> is <strong>copied</strong> (not linked) so later edits stay local to the env.</li>
+</ol>
+<div class="callout warn"><strong>Credentials are separate.</strong> Default create still copies <code>.credentials.json</code> when present unless you also pass <code>--anonymous</code>.</div>
+
+      <div class="docs-pager">
+        <a href="create-and-open.html"><span class="label">Previous</span><span class="title">Create & open</span></a>
+        <a class="next" href="share-team-setup.html"><span class="label">Next</span><span class="title">Share a team setup</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../../assets/docs.js"></script>
+</body>
+</html>
