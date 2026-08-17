@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { BotIcon, FileCodeIcon, TrashIcon, ZapIcon } from "../../components/Icons";
 import type { SkillOrAgentInfo } from "../../lib/commands";
 import {
   commandErrorMessage,
@@ -59,53 +60,79 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
     }
   }
 
-  function renderList(kind: Kind, items: SkillOrAgentInfo[]) {
-    if (items.length === 0) {
-      return <p className="text-sm text-neutral-500">Nenhum.</p>;
+  const combined = [
+    ...skills.map((item) => ({ kind: "skill" as Kind, item })),
+    ...agents.map((item) => ({ kind: "agent" as Kind, item })),
+  ];
+
+  function renderList() {
+    if (combined.length === 0) {
+      return <p className="text-sm text-neutral-500">Nenhuma.</p>;
     }
     return (
-      <ul className="divide-y divide-neutral-800 text-sm">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-neutral-200">{item.name}</p>
-              <p className="text-xs text-neutral-500">{item.description}</p>
+      <div className="flex flex-col gap-2">
+        {combined.map(({ kind, item }) => (
+          <div
+            key={`${kind}-${item.id}`}
+            className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded ${
+                  kind === "skill" ? "bg-orange-500/10 text-orange-400" : "bg-neutral-800 text-neutral-400"
+                }`}
+              >
+                {kind === "skill" ? <ZapIcon /> : <BotIcon />}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-sm font-medium text-neutral-100">{item.name}</span>
+                  <span className="rounded border border-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-500">
+                    {kind}
+                  </span>
+                  {item.builtIn && (
+                    <span
+                      className="rounded border border-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-600"
+                      title="Herdado do ambiente global — edite pelo ambiente de origem"
+                    >
+                      built-in
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs text-neutral-500">{item.description}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-xs">
-              {item.builtIn ? (
-                <span className="text-neutral-500" title="Herdado do ambiente global — edite pelo ambiente de origem">
-                  herdado
-                </span>
-              ) : (
-                <>
-                  <button
-                    onClick={() => onEdit(kind, item.id)}
-                    className="text-neutral-400 underline hover:text-neutral-200"
-                  >
-                    editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(kind, item.id)}
-                    className="text-red-400 underline hover:text-red-300"
-                  >
-                    remover
-                  </button>
-                </>
-              )}
-            </div>
-          </li>
+            {!item.builtIn && (
+              <div className="flex flex-shrink-0 items-center gap-3">
+                <button
+                  onClick={() => onEdit(kind, item.id)}
+                  className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+                >
+                  <FileCodeIcon /> Editar
+                </button>
+                <button
+                  onClick={() => handleDelete(kind, item.id)}
+                  className="text-neutral-600 hover:text-red-400"
+                >
+                  <TrashIcon />
+                </button>
+              </div>
+            )}
+          </div>
         ))}
-      </ul>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-7">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-neutral-200">Skills & Agents</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          {combined.length} skills & agents
+        </h3>
         <button
           onClick={() => setShowNew(true)}
-          className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
+          className="rounded border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20"
         >
           + Nova skill/agent
         </button>
@@ -176,14 +203,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
         <p className="text-xs text-red-400">Erro ao remover: {commandErrorMessage(deleteMutation.error)}</p>
       )}
 
-      <section>
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">Skills</h4>
-        {renderList("skill", skills)}
-      </section>
-      <section>
-        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">Agents</h4>
-        {renderList("agent", agents)}
-      </section>
+      {renderList()}
     </div>
   );
 }

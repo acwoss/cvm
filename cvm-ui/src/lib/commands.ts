@@ -197,6 +197,7 @@ export function deleteAgent(envName: string, id: string): Promise<void> {
 export interface HookSummary {
   event: string;
   configured: boolean;
+  enabled: boolean;
   preview: string | null;
 }
 
@@ -210,6 +211,10 @@ export function getHook(event: string): Promise<string | null> {
 
 export function writeHook(event: string, content: string): Promise<void> {
   return invoke("write_hook", { event, content });
+}
+
+export function setHookEnabled(event: string, enabled: boolean): Promise<void> {
+  return invoke("set_hook_enabled", { event, enabled });
 }
 
 export function deleteHook(event: string): Promise<void> {

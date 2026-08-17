@@ -22,7 +22,25 @@ pub const HOOK_EVENTS: [&str; 7] = [
 pub struct HookSummary {
     pub event: String,
     pub configured: bool,
+    /// No Unix, reflete o bit de execução real (o mesmo que `execute_hook`
+    /// verifica antes de rodar um hook - ver `hooks.rs`). Fora do Unix não
+    /// existe esse conceito (o `.cmd` sempre roda se presente), então
+    /// `enabled` é só um espelho de `configured` nessas plataformas.
+    pub enabled: bool,
     pub preview: Option<String>,
+}
+
+#[cfg(unix)]
+fn is_executable(path: &std::path::Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    fs::metadata(path)
+        .map(|m| m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn is_executable(_path: &std::path::Path) -> bool {
+    true
 }
 
 fn validate_event(event: &str) -> Result<()> {
@@ -66,6 +84,7 @@ pub fn list_hooks() -> Result<Vec<HookSummary>> {
             HookSummary {
                 event: event.to_string(),
                 configured,
+                enabled: configured && is_executable(&path),
                 preview,
             }
         })
@@ -107,6 +126,38 @@ pub fn write_hook(event: &str, content: &str) -> Result<()> {
     Ok(())
 }
 
+/// Liga/desliga um hook já configurado via o bit de execução real (o mesmo
+/// que `execute_hook` verifica). Só existe no Unix - fora dele não há como
+/// desabilitar um hook individualmente sem apagá-lo (o `.cmd` sempre roda se
+/// presente), então retorna erro em vez de fingir uma ação sem efeito real.
+pub fn set_hook_enabled(event: &str, enabled: bool) -> Result<()> {
+    validate_event(event)?;
+    let dir = crate::hooks::hooks_dir()?;
+    let path = crate::hooks::hook_path(&dir, event);
+    if !path.is_file() {
+        bail!("hook '{event}' is not configured");
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&path)
+            .with_context(|| format!("failed to stat {}", path.display()))?
+            .permissions();
+        let mode = perms.mode();
+        perms.set_mode(if enabled { mode | 0o100 } else { mode & !0o111 });
+        fs::set_permissions(&path, perms)
+            .with_context(|| format!("failed to chmod {}", path.display()))?;
+        Ok(())
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = enabled;
+        bail!("desabilitar hooks individualmente não é suportado nesta plataforma")
+    }
+}
+
 pub fn delete_hook(event: &str) -> Result<()> {
     validate_event(event)?;
     let dir = crate::hooks::hooks_dir()?;
@@ -142,7 +193,9 @@ mod tests {
             let hooks = list_hooks().unwrap();
             let events: Vec<&str> = hooks.iter().map(|h| h.event.as_str()).collect();
             assert_eq!(events, HOOK_EVENTS.to_vec());
-            assert!(hooks.iter().all(|h| !h.configured && h.preview.is_none()));
+            assert!(hooks
+                .iter()
+                .all(|h| !h.configured && !h.enabled && h.preview.is_none()));
         });
     }
 
@@ -236,6 +289,49 @@ mod tests {
                 0,
                 "não deve conceder execução a group/other, só ao dono"
             );
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn set_hook_enabled_false_removes_execute_bit_and_true_restores_it() {
+        use std::os::unix::fs::PermissionsExt;
+
+        with_temp_home(|_home| {
+            write_hook("post-activate", "#!/bin/sh\nexit 0\n").unwrap();
+            let dir = crate::hooks::hooks_dir().unwrap();
+            let path = crate::hooks::hook_path(&dir, "post-activate");
+
+            set_hook_enabled("post-activate", false).unwrap();
+            let mode = fs::metadata(&path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o111, 0);
+            assert!(
+                !list_hooks()
+                    .unwrap()
+                    .iter()
+                    .find(|h| h.event == "post-activate")
+                    .unwrap()
+                    .enabled
+            );
+
+            set_hook_enabled("post-activate", true).unwrap();
+            let mode = fs::metadata(&path).unwrap().permissions().mode();
+            assert_ne!(mode & 0o111, 0);
+            assert!(
+                list_hooks()
+                    .unwrap()
+                    .iter()
+                    .find(|h| h.event == "post-activate")
+                    .unwrap()
+                    .enabled
+            );
+        });
+    }
+
+    #[test]
+    fn set_hook_enabled_fails_when_not_configured() {
+        with_temp_home(|_home| {
+            assert!(set_hook_enabled("post-activate", false).is_err());
         });
     }
 

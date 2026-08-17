@@ -227,3 +227,9 @@ pub fn delete_hook(event: String) -> Result<(), CommandError> {
     ui::delete_hook(&event)?;
     Ok(())
 }
+
+#[tauri::command]
+pub fn set_hook_enabled(event: String, enabled: bool) -> Result<(), CommandError> {
+    ui::set_hook_enabled(&event, enabled)?;
+    Ok(())
+}

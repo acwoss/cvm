@@ -32,6 +32,7 @@ pub fn run() {
             commands::get_hook,
             commands::write_hook,
             commands::delete_hook,
+            commands::set_hook_enabled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

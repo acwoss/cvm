@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { TrashIcon } from "../../components/Icons";
 import type { MarketplaceInfo, PluginInfo } from "../../lib/commands";
 import {
   addMarketplace,
@@ -98,9 +99,9 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
       ) : (
         marketplaces.map((m) => (
           <section key={m.id}>
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-neutral-200">
-                {m.id} {m.repo && <span className="text-xs text-neutral-500">({m.repo})</span>}
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-mono text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                {m.id} {m.repo && <span className="text-neutral-600">({m.repo})</span>}
               </h3>
               <button
                 onClick={() => handleRemoveMarketplace(m.id)}
@@ -110,69 +111,90 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
               </button>
             </div>
             {removeMarketplaceMutation.error && removeMarketplaceMutation.variables === m.id && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mb-2 text-xs text-red-400">
                 Erro: {commandErrorMessage(removeMarketplaceMutation.error)}
               </p>
             )}
-            <ul className="mt-2 divide-y divide-neutral-800">
+            <div className="flex flex-col gap-2">
               {m.plugins.map((p) => {
                 const id = pluginId(m.id, p);
                 return (
-                  <li key={p.name} className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-neutral-200">{p.name}</p>
-                      {p.description && <p className="text-xs text-neutral-500">{p.description}</p>}
-                    </div>
-                    <div className="flex flex-col items-end gap-1 text-xs">
-                      <div className="flex items-center gap-2">
-                        {p.version && <span className="text-neutral-500">v{p.version}</span>}
+                  <div
+                    key={p.name}
+                    className="rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${
+                            p.installed && p.enabled ? "bg-emerald-400" : "bg-neutral-600"
+                          }`}
+                        />
+                        <span className="truncate font-mono text-xs font-medium text-neutral-100">
+                          {p.name}
+                        </span>
+                        {p.version && (
+                          <span className="flex-shrink-0 font-mono text-[10px] text-neutral-600">
+                            v{p.version}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-3">
                         {p.installed ? (
                           <>
                             <button
                               onClick={() =>
                                 p.enabled ? disableMutation.mutate(id) : enableMutation.mutate(id)
                               }
-                              className={p.enabled ? "text-emerald-400 underline" : "text-neutral-500 underline"}
+                              className="relative h-[18px] w-8 rounded-full transition-colors"
+                              style={{ background: p.enabled ? "rgba(0,229,255,0.18)" : "#282B33" }}
                             >
-                              {p.enabled ? "habilitado" : "desabilitado"}
+                              <span
+                                className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
+                                style={{
+                                  left: p.enabled ? 15 : 2,
+                                  background: p.enabled ? "#00E5FF" : "#555B68",
+                                }}
+                              />
                             </button>
                             <button
                               onClick={() => uninstallMutation.mutate(id)}
-                              className="text-red-400 underline hover:text-red-300"
+                              className="text-neutral-600 hover:text-red-400"
                             >
-                              desinstalar
+                              <TrashIcon />
                             </button>
                           </>
                         ) : (
                           <button
                             onClick={() => installMutation.mutate(id)}
-                            className="text-neutral-100 underline hover:text-white"
+                            className="rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
                           >
                             instalar
                           </button>
                         )}
                       </div>
-                      {installMutation.error && installMutation.variables === id && (
-                        <span className="text-red-400">Erro: {commandErrorMessage(installMutation.error)}</span>
-                      )}
-                      {uninstallMutation.error && uninstallMutation.variables === id && (
-                        <span className="text-red-400">
-                          Erro: {commandErrorMessage(uninstallMutation.error)}
-                        </span>
-                      )}
-                      {enableMutation.error && enableMutation.variables === id && (
-                        <span className="text-red-400">Erro: {commandErrorMessage(enableMutation.error)}</span>
-                      )}
-                      {disableMutation.error && disableMutation.variables === id && (
-                        <span className="text-red-400">
-                          Erro: {commandErrorMessage(disableMutation.error)}
-                        </span>
-                      )}
                     </div>
-                  </li>
+                    {p.description && <p className="mt-1 text-xs text-neutral-500">{p.description}</p>}
+                    {installMutation.error && installMutation.variables === id && (
+                      <p className="mt-1 text-xs text-red-400">Erro: {commandErrorMessage(installMutation.error)}</p>
+                    )}
+                    {uninstallMutation.error && uninstallMutation.variables === id && (
+                      <p className="mt-1 text-xs text-red-400">
+                        Erro: {commandErrorMessage(uninstallMutation.error)}
+                      </p>
+                    )}
+                    {enableMutation.error && enableMutation.variables === id && (
+                      <p className="mt-1 text-xs text-red-400">Erro: {commandErrorMessage(enableMutation.error)}</p>
+                    )}
+                    {disableMutation.error && disableMutation.variables === id && (
+                      <p className="mt-1 text-xs text-red-400">
+                        Erro: {commandErrorMessage(disableMutation.error)}
+                      </p>
+                    )}
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           </section>
         ))
       )}
