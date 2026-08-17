@@ -193,6 +193,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     #[test]
     fn ensure_installed_finds_binary_nested_inside_a_directory_in_the_archive() {
         let _guard = HOME_LOCK.lock().unwrap();
