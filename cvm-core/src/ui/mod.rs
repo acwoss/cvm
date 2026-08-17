@@ -1,5 +1,6 @@
 mod account;
 mod config;
+mod hooks;
 mod marketplaces;
 mod skill_editor;
 mod skills;
@@ -10,6 +11,7 @@ pub use config::{
     list_env_var_summaries, read_config_section, remove_env_var, reveal_value,
     write_config_section, write_env_var, ConfigSection, EnvVarSource, EnvVarSummary,
 };
+pub use hooks::{delete_hook, list_hooks, read_hook, write_hook, HookSummary};
 pub use marketplaces::{list_marketplaces, MarketplaceInfo, PluginInfo};
 pub use skill_editor::{
     create_agent, create_skill, delete_agent, delete_skill, read_agent_content, read_skill_content,

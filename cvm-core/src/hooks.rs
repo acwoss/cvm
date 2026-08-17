@@ -12,7 +12,7 @@ pub fn hooks_dir() -> Result<PathBuf> {
 /// Path of `event`'s hook script inside `hooks_dir`: extensionless on Unix
 /// (needs `chmod +x` and a shebang), `<event>.cmd` on Windows - the same
 /// per-platform convention already used for environment shims in `bin/`.
-fn hook_path(hooks_dir: &Path, event: &str) -> PathBuf {
+pub(crate) fn hook_path(hooks_dir: &Path, event: &str) -> PathBuf {
     if cfg!(windows) {
         hooks_dir.join(format!("{event}.cmd"))
     } else {
