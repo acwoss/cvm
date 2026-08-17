@@ -123,32 +123,50 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
                       <p className="text-neutral-200">{p.name}</p>
                       {p.description && <p className="text-xs text-neutral-500">{p.description}</p>}
                     </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      {p.version && <span className="text-neutral-500">v{p.version}</span>}
-                      {p.installed ? (
-                        <>
+                    <div className="flex flex-col items-end gap-1 text-xs">
+                      <div className="flex items-center gap-2">
+                        {p.version && <span className="text-neutral-500">v{p.version}</span>}
+                        {p.installed ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                p.enabled ? disableMutation.mutate(id) : enableMutation.mutate(id)
+                              }
+                              className={p.enabled ? "text-emerald-400 underline" : "text-neutral-500 underline"}
+                            >
+                              {p.enabled ? "habilitado" : "desabilitado"}
+                            </button>
+                            <button
+                              onClick={() => uninstallMutation.mutate(id)}
+                              className="text-red-400 underline hover:text-red-300"
+                            >
+                              desinstalar
+                            </button>
+                          </>
+                        ) : (
                           <button
-                            onClick={() =>
-                              p.enabled ? disableMutation.mutate(id) : enableMutation.mutate(id)
-                            }
-                            className={p.enabled ? "text-emerald-400 underline" : "text-neutral-500 underline"}
+                            onClick={() => installMutation.mutate(id)}
+                            className="text-neutral-100 underline hover:text-white"
                           >
-                            {p.enabled ? "habilitado" : "desabilitado"}
+                            instalar
                           </button>
-                          <button
-                            onClick={() => uninstallMutation.mutate(id)}
-                            className="text-red-400 underline hover:text-red-300"
-                          >
-                            desinstalar
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => installMutation.mutate(id)}
-                          className="text-neutral-100 underline hover:text-white"
-                        >
-                          instalar
-                        </button>
+                        )}
+                      </div>
+                      {installMutation.error && installMutation.variables === id && (
+                        <span className="text-red-400">Erro: {commandErrorMessage(installMutation.error)}</span>
+                      )}
+                      {uninstallMutation.error && uninstallMutation.variables === id && (
+                        <span className="text-red-400">
+                          Erro: {commandErrorMessage(uninstallMutation.error)}
+                        </span>
+                      )}
+                      {enableMutation.error && enableMutation.variables === id && (
+                        <span className="text-red-400">Erro: {commandErrorMessage(enableMutation.error)}</span>
+                      )}
+                      {disableMutation.error && disableMutation.variables === id && (
+                        <span className="text-red-400">
+                          Erro: {commandErrorMessage(disableMutation.error)}
+                        </span>
                       )}
                     </div>
                   </li>
