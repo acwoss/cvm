@@ -281,6 +281,9 @@ pub fn list_envs() -> Result<Vec<String>> {
 }
 
 pub fn remove_env(name: &str) -> Result<()> {
+    if active_env().as_deref() == Some(name) {
+        bail!("cannot remove '{name}' while it is active; run `cvm deactivate` first");
+    }
     let dir = ensure_env_exists(name)?;
     let hooks_dir = hooks::hooks_dir()?;
     hooks::run_pre_hook(&hooks_dir, "pre-remove", name, &dir)?;
@@ -1106,6 +1109,31 @@ mod tests {
             assert!(
                 dir.is_dir(),
                 "environment must not be deleted when pre-remove fails"
+            );
+        });
+    }
+
+    #[test]
+    fn remove_env_refuses_to_remove_the_active_environment() {
+        with_temp_home(|_home| {
+            let _exec_guard = hooks::EXEC_TEST_LOCK.lock().unwrap();
+            let (dir, _, _) = create_env("work", true, false).unwrap();
+            // SAFETY: guardado por HOME_LOCK (mantido por with_temp_home).
+            unsafe {
+                env::set_var(ACTIVE_ENV_VAR, "work");
+            }
+
+            let result = remove_env("work");
+
+            // SAFETY: guardado por HOME_LOCK.
+            unsafe {
+                env::remove_var(ACTIVE_ENV_VAR);
+            }
+
+            assert!(result.is_err());
+            assert!(
+                dir.is_dir(),
+                "the active environment's directory must not be deleted"
             );
         });
     }

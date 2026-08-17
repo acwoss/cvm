@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { CreateEnvironmentDialog } from "../components/CreateEnvironmentDialog";
-import { listEnvironments } from "../lib/commands";
+import { commandErrorMessage, listEnvironments } from "../lib/commands";
 
 interface Props {
   onSelect: (name: string) => void;
@@ -27,7 +27,7 @@ export function EnvironmentsListPage({ onSelect }: Props) {
       </div>
 
       {isPending && <p className="p-6 text-sm text-neutral-400">Carregando ambientes…</p>}
-      {error && <p className="p-6 text-sm text-red-400">Erro ao listar ambientes: {String(error)}</p>}
+      {error && <p className="p-6 text-sm text-red-400">Erro ao listar ambientes: {commandErrorMessage(error)}</p>}
       {data && data.length === 0 && (
         <p className="p-6 text-sm text-neutral-400">Nenhum ambiente encontrado. Crie um com o botão acima.</p>
       )}

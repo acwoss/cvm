@@ -16,8 +16,10 @@ export function CreateEnvironmentDialog({ onClose }: Props) {
   const mutation = useMutation({
     mutationFn: () => createEnvironment(name, anonymous, inherit, open),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["environments"] });
       onClose();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["environments"] });
     },
   });
 

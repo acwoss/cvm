@@ -54,7 +54,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
       </header>
 
       {isPending && <p className="p-6 text-sm text-neutral-400">Carregando…</p>}
-      {error && <p className="p-6 text-sm text-red-400">Erro ao carregar ambiente: {String(error)}</p>}
+      {error && <p className="p-6 text-sm text-red-400">Erro ao carregar ambiente: {commandErrorMessage(error)}</p>}
 
       {data && (
         <>

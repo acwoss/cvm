@@ -198,10 +198,6 @@ fn cmd_current() {
 fn cmd_remove(env_name: &str, yes: bool) -> Result<()> {
     env::ensure_env_exists(env_name)?;
 
-    if env::active_env().as_deref() == Some(env_name) {
-        anyhow::bail!("cannot remove '{env_name}' while it is active; run `cvm deactivate` first");
-    }
-
     if !yes {
         let confirmed = dialoguer::Confirm::new()
             .with_prompt(format!(
