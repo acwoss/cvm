@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getEnvironmentDetail } from "../lib/commands";
+import { getEnvironmentDetail, openInClaude } from "../lib/commands";
 import { AccountTab } from "./tabs/AccountTab";
 import { ConfigTab } from "./tabs/ConfigTab";
 import { EnvVarsTab } from "./tabs/EnvVarsTab";
@@ -32,11 +32,19 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
 
   return (
     <div>
-      <header className="flex items-center gap-3 border-b border-neutral-800 px-6 py-4">
-        <button onClick={onBack} className="text-sm text-neutral-400 hover:text-neutral-200">
-          ← Voltar
+      <header className="flex items-center justify-between gap-3 border-b border-neutral-800 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="text-sm text-neutral-400 hover:text-neutral-200">
+            ← Voltar
+          </button>
+          <h2 className="text-sm font-medium text-neutral-100">{name}</h2>
+        </div>
+        <button
+          onClick={() => openInClaude(name)}
+          className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
+        >
+          Abrir no Claude
         </button>
-        <h2 className="text-sm font-medium text-neutral-100">{name}</h2>
       </header>
 
       {isPending && <p className="p-6 text-sm text-neutral-400">Carregando…</p>}
@@ -63,7 +71,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
             ))}
           </nav>
           {tab === "config" && <ConfigTab config={data.config} />}
-          {tab === "envvars" && <EnvVarsTab envVars={data.envVars} />}
+          {tab === "envvars" && <EnvVarsTab envName={name} envVars={data.envVars} />}
           {tab === "marketplaces" && <MarketplacesTab marketplaces={data.marketplaces} />}
           {tab === "skills" && <SkillsAgentsTab skills={data.skills} agents={data.agents} />}
           {tab === "account" && <AccountTab account={data.account} />}

@@ -67,3 +67,11 @@ export interface EnvironmentDetail {
 export function getEnvironmentDetail(name: string): Promise<EnvironmentDetail> {
   return invoke("get_environment_detail", { name });
 }
+
+export function revealEnvVar(name: string, source: EnvVarSource, key: string): Promise<string> {
+  return invoke("reveal_env_var", { name, source, key });
+}
+
+export function openInClaude(name: string): Promise<void> {
+  return invoke("open_in_claude", { name });
+}
