@@ -21,6 +21,7 @@ export function EnvVarsTab({ envName, envVars }: Props) {
   const [formKey, setFormKey] = useState("");
   const [formValue, setFormValue] = useState("");
   const [formSource, setFormSource] = useState<EnvVarSource>("dotenv");
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
   const revealMutation = useMutation({
     mutationFn: ({ source, key }: { source: EnvVarSource; key: string }) =>
@@ -48,6 +49,7 @@ export function EnvVarsTab({ envName, envVars }: Props) {
     setFormKey("");
     setFormValue("");
     setFormSource("dotenv");
+    setLoadingEdit(false);
   }
 
   function openAddForm() {
@@ -55,12 +57,25 @@ export function EnvVarsTab({ envName, envVars }: Props) {
     setShowForm(true);
   }
 
-  function openEditForm(v: EnvVarSummary) {
+  async function openEditForm(v: EnvVarSummary) {
     setEditing({ source: v.source, key: v.key });
     setFormKey(v.key);
     setFormValue("");
     setFormSource(v.source);
     setShowForm(true);
+    setLoadingEdit(true);
+    try {
+      const value = await revealEnvVar(envName, v.source, v.key);
+      setFormValue(value);
+    } catch {
+      // deixa o campo vazio; o usuário ainda pode digitar um valor novo,
+      // mas o botão Salvar continua bloqueado até ele fazer isso (ver
+      // disabled={... || (editing !== null && loadingEdit)} abaixo) - não
+      // sobrescrevemos silenciosamente o valor existente com "" se a
+      // releitura falhar.
+    } finally {
+      setLoadingEdit(false);
+    }
   }
 
   function handleRemove(v: EnvVarSummary) {
@@ -107,7 +122,9 @@ export function EnvVarsTab({ envName, envVars }: Props) {
               <input
                 value={formValue}
                 onChange={(e) => setFormValue(e.target.value)}
-                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-100 outline-none focus:border-neutral-500"
+                disabled={loadingEdit}
+                placeholder={loadingEdit ? "Carregando valor atual…" : undefined}
+                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-100 outline-none focus:border-neutral-500 disabled:opacity-50"
               />
             </div>
           </div>
@@ -135,7 +152,7 @@ export function EnvVarsTab({ envName, envVars }: Props) {
             </button>
             <button
               onClick={() => saveMutation.mutate()}
-              disabled={formKey.trim().length === 0 || saveMutation.isPending}
+              disabled={formKey.trim().length === 0 || saveMutation.isPending || loadingEdit}
               className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
             >
               {saveMutation.isPending ? "Salvando…" : "Salvar"}
