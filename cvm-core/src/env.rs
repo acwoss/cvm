@@ -487,16 +487,22 @@ fn open_via_macos_terminal(
         ACTIVE_ENV_VAR,
         shell_single_quote(env_name)
     ));
-    script.push_str("exec claude\n");
+    script.push_str("rm -f \"$0\"\nexec claude\n");
 
     let script_path =
         env::temp_dir().join(format!("cvm-open-{env_name}-{}.sh", std::process::id()));
-    fs::write(&script_path, script)
-        .with_context(|| format!("failed to write {}", script_path.display()))?;
     {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(&script_path, fs::Permissions::from_mode(0o700))
-            .with_context(|| format!("failed to chmod {}", script_path.display()))?;
+        use std::io::Write as _;
+        use std::os::unix::fs::OpenOptionsExt;
+
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o700)
+            .open(&script_path)
+            .with_context(|| format!("failed to create {}", script_path.display()))?;
+        file.write_all(script.as_bytes())
+            .with_context(|| format!("failed to write {}", script_path.display()))?;
     }
     let script_path_str = script_path
         .to_str()

@@ -54,6 +54,7 @@ pub fn read_config_section(env_dir: &Path) -> Result<ConfigSection> {
         _ => (Vec::new(), Vec::new()),
     };
     obj.remove("mcpServers");
+    obj.remove("env");
 
     Ok(ConfigSection {
         allowed_tools,
@@ -209,5 +210,20 @@ mod tests {
     fn reveal_value_errors_when_key_missing() {
         let dir = tempfile::tempdir().unwrap();
         assert!(reveal_value(dir.path(), EnvVarSource::Dotenv, "MISSING").is_err());
+    }
+
+    #[test]
+    fn read_config_section_strips_the_env_block_from_other() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("settings.json"),
+            r#"{"env":{"SECRET_KEY":"super-secret"},"theme":"dark"}"#,
+        )
+        .unwrap();
+
+        let config = read_config_section(dir.path()).unwrap();
+
+        assert!(config.other.get("env").is_none());
+        assert_eq!(config.other["theme"], "dark");
     }
 }

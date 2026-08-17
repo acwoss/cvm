@@ -154,4 +154,26 @@ mod tests {
             assert_eq!(value, "abc123");
         });
     }
+
+    #[test]
+    fn environment_detail_never_leaks_secret_values_outside_reveal() {
+        with_temp_home(|_home| {
+            let (dir, _, _) = crate::env::create_env("work", true, false).unwrap();
+            fs::write(dir.join(".env"), "DOTENV_SECRET=leak-me-not\n").unwrap();
+            fs::write(
+                dir.join("settings.json"),
+                r#"{"env":{"SETTINGS_SECRET":"also-leak-me-not"}}"#,
+            )
+            .unwrap();
+
+            let detail = environment_detail("work").unwrap();
+            let serialized = serde_json::to_string(&detail).unwrap();
+
+            assert!(!serialized.contains("leak-me-not"));
+            assert!(!serialized.contains("also-leak-me-not"));
+            // The *names* are expected to appear (that's the whole point of the Env Vars tab).
+            assert!(serialized.contains("DOTENV_SECRET"));
+            assert!(serialized.contains("SETTINGS_SECRET"));
+        });
+    }
 }

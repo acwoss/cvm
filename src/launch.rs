@@ -67,8 +67,15 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
     let bin_dir = ui_bin_dir()?;
     fs::create_dir_all(&bin_dir)
         .with_context(|| format!("failed to create {}", bin_dir.display()))?;
-    let tmp_archive = bin_dir.join(&asset);
 
+    let tmp_dir = std::env::temp_dir().join(format!("cvm-launch-{}", std::process::id()));
+    fs::create_dir_all(&tmp_dir)
+        .with_context(|| format!("failed to create {}", tmp_dir.display()))?;
+    let cleanup = |dir: &std::path::Path| {
+        let _ = fs::remove_dir_all(dir);
+    };
+
+    let tmp_archive = tmp_dir.join(&asset);
     let status = Command::new("curl")
         .args(["-fsSL", "-o"])
         .arg(&tmp_archive)
@@ -76,7 +83,7 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
         .status()
         .context("failed to run 'curl' - is it installed and on PATH?")?;
     if !status.success() {
-        let _ = fs::remove_file(&tmp_archive);
+        cleanup(&tmp_dir);
         bail!("failed to download {url}");
     }
 
@@ -89,13 +96,35 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
         .arg(extract_flag)
         .arg(&tmp_archive)
         .arg("-C")
-        .arg(&bin_dir)
+        .arg(&tmp_dir)
         .status()
         .context("failed to run 'tar' - is it installed and on PATH?")?;
-    let _ = fs::remove_file(&tmp_archive);
     if !status.success() {
+        cleanup(&tmp_dir);
         bail!("failed to extract {asset}");
     }
+
+    let found = match crate::update::find_binary(&tmp_dir, UI_BIN_NAME) {
+        Ok(found) => found,
+        Err(err) => {
+            cleanup(&tmp_dir);
+            return Err(err);
+        }
+    };
+
+    if let Err(err) = fs::rename(&found, &path) {
+        if let Err(copy_err) = fs::copy(&found, &path) {
+            cleanup(&tmp_dir);
+            return Err(copy_err).with_context(|| {
+                format!(
+                    "failed to install {} to {} (rename also failed: {err})",
+                    found.display(),
+                    path.display()
+                )
+            });
+        }
+    }
+    cleanup(&tmp_dir);
 
     #[cfg(unix)]
     {
@@ -104,12 +133,6 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
             .with_context(|| format!("failed to make {} executable", path.display()))?;
     }
 
-    if !path.is_file() {
-        bail!(
-            "downloaded {asset} but did not find '{UI_BIN_NAME}' inside it at {}",
-            path.display()
-        );
-    }
     Ok(path)
 }
 
@@ -168,5 +191,72 @@ mod tests {
         unsafe {
             std::env::remove_var("CVM_HOME");
         }
+    }
+
+    #[test]
+    fn ensure_installed_finds_binary_nested_inside_a_directory_in_the_archive() {
+        let _guard = HOME_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        // SAFETY: guardado por HOME_LOCK.
+        unsafe {
+            std::env::set_var("CVM_HOME", home.path().join(".cvm"));
+        }
+
+        // Build a real tar.gz containing a nested "cvm-ui-<target>/cvm-ui" file,
+        // the exact layout release.yml produces, and serve it via a fake `curl`
+        // (a shim on PATH) so this test needs no network access.
+        let staging = tempfile::tempdir().unwrap();
+        let nested_dir = staging.path().join("cvm-ui-fake-target");
+        std::fs::create_dir_all(&nested_dir).unwrap();
+        std::fs::write(nested_dir.join(UI_BIN_NAME), "fake ui binary").unwrap();
+        let archive_path = staging.path().join("fake.tar.gz");
+        let status = std::process::Command::new("tar")
+            .arg("-czf")
+            .arg(&archive_path)
+            .arg("-C")
+            .arg(staging.path())
+            .arg("cvm-ui-fake-target")
+            .status()
+            .unwrap();
+        assert!(status.success());
+
+        let fake_bin_dir = home.path().join("fake-bin");
+        std::fs::create_dir_all(&fake_bin_dir).unwrap();
+        let fake_curl = fake_bin_dir.join("curl");
+        std::fs::write(
+            &fake_curl,
+            format!(
+                "#!/bin/sh\n# args: -fsSL -o <dest> <url> - just copy our prebuilt archive to <dest>\ncp {} \"$3\"\n",
+                archive_path.display()
+            ),
+        )
+        .unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&fake_curl, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        let old_path = std::env::var("PATH").unwrap_or_default();
+        // SAFETY: guardado por HOME_LOCK.
+        unsafe {
+            std::env::set_var("PATH", format!("{}:{}", fake_bin_dir.display(), old_path));
+        }
+
+        // target_triple() would pick a real platform triple and build a URL
+        // release.yml doesn't actually serve for "fake-target" - but since our
+        // fake curl ignores the URL entirely and always serves the same fixed
+        // archive, this still exercises the real extraction/find/install path
+        // regardless of what target string ends up in the (unused) URL.
+        let result = ensure_installed(|| Ok("v0.0.0".to_string()));
+
+        // SAFETY: guardado por HOME_LOCK.
+        unsafe {
+            std::env::set_var("PATH", old_path);
+            std::env::remove_var("CVM_HOME");
+        }
+
+        let path = result.unwrap();
+        assert_eq!(path, home.path().join(".cvm/bin").join(UI_BIN_NAME));
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "fake ui binary");
+        // The extracted temp directory must not linger.
+        assert!(!home.path().join(".cvm/bin/cvm-ui-fake-target").exists());
     }
 }

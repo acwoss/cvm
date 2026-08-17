@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getEnvironmentDetail, openInClaude } from "../lib/commands";
 import { AccountTab } from "./tabs/AccountTab";
@@ -29,6 +29,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
     queryKey: ["environment-detail", name],
     queryFn: () => getEnvironmentDetail(name),
   });
+  const openInClaudeMutation = useMutation({ mutationFn: () => openInClaude(name) });
 
   return (
     <div>
@@ -39,12 +40,17 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
           </button>
           <h2 className="text-sm font-medium text-neutral-100">{name}</h2>
         </div>
-        <button
-          onClick={() => openInClaude(name)}
-          className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
-        >
-          Abrir no Claude
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={() => openInClaudeMutation.mutate()}
+            className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
+          >
+            Abrir no Claude
+          </button>
+          {openInClaudeMutation.error && (
+            <p className="text-xs text-red-400">Erro: {String(openInClaudeMutation.error)}</p>
+          )}
+        </div>
       </header>
 
       {isPending && <p className="p-6 text-sm text-neutral-400">Carregando…</p>}

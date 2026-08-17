@@ -115,22 +115,22 @@ fn extract(archive: &Path, dest_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn find_binary(dir: &Path) -> Result<PathBuf> {
+pub(crate) fn find_binary(dir: &Path, bin_name: &str) -> Result<PathBuf> {
     for entry in fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))? {
         let entry = entry?;
         let path = entry.path();
         if path.is_dir() {
-            if let Ok(found) = find_binary(&path) {
+            if let Ok(found) = find_binary(&path, bin_name) {
                 return Ok(found);
             }
-        } else if path.file_name().and_then(|n| n.to_str()) == Some(BIN_NAME) {
+        } else if path.file_name().and_then(|n| n.to_str()) == Some(bin_name) {
             return Ok(path);
         }
     }
     bail!(
-        "could not find '{BIN_NAME}' inside the downloaded archive at {}",
+        "could not find '{bin_name}' inside the downloaded archive at {}",
         dir.display()
-    );
+    )
 }
 
 /// Checks for a newer release and, if one exists, downloads it and replaces
@@ -166,7 +166,7 @@ pub fn run() -> Result<UpdateOutcome> {
         cleanup(&tmp_dir);
         return Err(err);
     }
-    let new_binary = match find_binary(&tmp_dir) {
+    let new_binary = match find_binary(&tmp_dir, BIN_NAME) {
         Ok(path) => path,
         Err(err) => {
             cleanup(&tmp_dir);
@@ -225,7 +225,7 @@ mod tests {
         fs::write(nested.join("README.md"), "not the binary").unwrap();
         fs::write(nested.join(BIN_NAME), "fake binary contents").unwrap();
 
-        let found = find_binary(dir.path()).unwrap();
+        let found = find_binary(dir.path(), BIN_NAME).unwrap();
 
         assert_eq!(found, nested.join(BIN_NAME));
     }
@@ -233,6 +233,6 @@ mod tests {
     #[test]
     fn find_binary_errors_when_missing() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(find_binary(dir.path()).is_err());
+        assert!(find_binary(dir.path(), BIN_NAME).is_err());
     }
 }
