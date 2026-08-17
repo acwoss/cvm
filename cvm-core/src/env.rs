@@ -662,6 +662,17 @@ pub fn edit_env(name: &str) -> Result<i32> {
     Ok(status.code().unwrap_or(1))
 }
 
+/// Roda `claude` com `args`, isolado no `CLAUDE_CONFIG_DIR`/`CVM_ENV`/`PATH`
+/// de `name` (mesmo isolamento de `run_in_env`), capturando a saída em vez
+/// de herdar o stdio do chamador ou rodar destacado - para quem chama (como
+/// as ações de plugin/marketplace da UI) e precisa mostrar o resultado do
+/// comando, não só lançá-lo.
+pub fn run_claude_command(name: &str, args: &[String]) -> Result<std::process::Output> {
+    prepare_env_command(name, "claude", args)?
+        .output()
+        .context("failed to run 'claude'")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
