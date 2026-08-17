@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cvm-core"]
+members = ["cvm-core", "cvm-ui/src-tauri"]
 default-members = ["."]
 
 [package]
