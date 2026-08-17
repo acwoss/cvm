@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { EnvVarSource, EnvVarSummary } from "../../lib/commands";
-import { revealEnvVar } from "../../lib/commands";
+import { commandErrorMessage, revealEnvVar } from "../../lib/commands";
 
 interface Props {
   envName: string;
@@ -32,7 +32,9 @@ export function EnvVarsTab({ envName, envVars }: Props) {
   return (
     <>
       {revealMutation.error && (
-        <p className="px-6 py-2 text-xs text-red-400">Erro ao revelar: {String(revealMutation.error)}</p>
+        <p className="px-6 py-2 text-xs text-red-400">
+          Erro ao revelar: {commandErrorMessage(revealMutation.error)}
+        </p>
       )}
       <ul className="divide-y divide-neutral-800 text-sm">
         {envVars.map((v) => {

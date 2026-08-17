@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getEnvironmentDetail, openInClaude } from "../lib/commands";
+import { commandErrorMessage, getEnvironmentDetail, openInClaude } from "../lib/commands";
 import { AccountTab } from "./tabs/AccountTab";
 import { ConfigTab } from "./tabs/ConfigTab";
 import { EnvVarsTab } from "./tabs/EnvVarsTab";
@@ -48,7 +48,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
             Abrir no Claude
           </button>
           {openInClaudeMutation.error && (
-            <p className="text-xs text-red-400">Erro: {String(openInClaudeMutation.error)}</p>
+            <p className="text-xs text-red-400">Erro: {commandErrorMessage(openInClaudeMutation.error)}</p>
           )}
         </div>
       </header>

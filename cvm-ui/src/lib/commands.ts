@@ -75,3 +75,28 @@ export function revealEnvVar(name: string, source: EnvVarSource, key: string): P
 export function openInClaude(name: string): Promise<void> {
   return invoke("open_in_claude", { name });
 }
+
+export function commandErrorMessage(err: unknown): string {
+  if (
+    err &&
+    typeof err === "object" &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string"
+  ) {
+    return (err as { message: string }).message;
+  }
+  return String(err);
+}
+
+export function createEnvironment(
+  name: string,
+  anonymous: boolean,
+  inherit: boolean,
+  open: boolean,
+): Promise<void> {
+  return invoke("create_environment", { name, anonymous, inherit, open });
+}
+
+export function removeEnvironment(name: string): Promise<void> {
+  return invoke("remove_environment", { name });
+}
