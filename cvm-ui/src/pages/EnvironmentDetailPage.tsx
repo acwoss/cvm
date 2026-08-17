@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { commandErrorMessage, getEnvironmentDetail, openInClaude } from "../lib/commands";
+import { SkillEditor } from "../components/SkillEditor";
 import { AccountTab } from "./tabs/AccountTab";
 import { ConfigTab } from "./tabs/ConfigTab";
 import { EnvVarsTab } from "./tabs/EnvVarsTab";
@@ -25,11 +26,23 @@ interface Props {
 
 export function EnvironmentDetailPage({ name, onBack }: Props) {
   const [tab, setTab] = useState<Tab>("config");
+  const [editing, setEditing] = useState<{ kind: "skill" | "agent"; id: string } | null>(null);
   const { data, isPending, error } = useQuery({
     queryKey: ["environment-detail", name],
     queryFn: () => getEnvironmentDetail(name),
   });
   const openInClaudeMutation = useMutation({ mutationFn: () => openInClaude(name) });
+
+  if (editing) {
+    return (
+      <SkillEditor
+        envName={name}
+        kind={editing.kind}
+        id={editing.id}
+        onClose={() => setEditing(null)}
+      />
+    );
+  }
 
   return (
     <div>
@@ -79,7 +92,14 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
           {tab === "config" && <ConfigTab config={data.config} envName={name} onRemoved={onBack} />}
           {tab === "envvars" && <EnvVarsTab envName={name} envVars={data.envVars} />}
           {tab === "marketplaces" && <MarketplacesTab envName={name} marketplaces={data.marketplaces} />}
-          {tab === "skills" && <SkillsAgentsTab skills={data.skills} agents={data.agents} />}
+          {tab === "skills" && (
+            <SkillsAgentsTab
+              envName={name}
+              skills={data.skills}
+              agents={data.agents}
+              onEdit={(kind, id) => setEditing({ kind, id })}
+            />
+          )}
           {tab === "account" && <AccountTab account={data.account} />}
         </>
       )}
