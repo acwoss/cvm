@@ -19,6 +19,7 @@ use serde::Serialize;
 use crate::env;
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EnvironmentDetail {
     pub name: String,
     pub path: String,

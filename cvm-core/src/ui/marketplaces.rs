@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginInfo {
     pub name: String,
     pub description: Option<String>,
@@ -16,6 +17,7 @@ pub struct PluginInfo {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MarketplaceInfo {
     pub id: String,
     pub repo: Option<String>,

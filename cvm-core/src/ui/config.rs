@@ -8,6 +8,7 @@ use serde_json::Value;
 use crate::env;
 
 #[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigSection {
     pub allowed_tools: Vec<String>,
     pub denied_tools: Vec<String>,
@@ -26,6 +27,7 @@ pub enum EnvVarSource {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EnvVarSummary {
     pub key: String,
     pub source: EnvVarSource,

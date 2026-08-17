@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { EnvironmentDetailPage } from "./pages/EnvironmentDetailPage";
 import { EnvironmentsListPage } from "./pages/EnvironmentsListPage";
 
 const queryClient = new QueryClient();
@@ -13,12 +14,7 @@ function App() {
         {selected === null ? (
           <EnvironmentsListPage onSelect={setSelected} />
         ) : (
-          <p className="p-6 text-sm text-neutral-400">
-            Detalhe de "{selected}" — implementado na próxima task.{" "}
-            <button className="underline" onClick={() => setSelected(null)}>
-              Voltar
-            </button>
-          </p>
+          <EnvironmentDetailPage name={selected} onBack={() => setSelected(null)} />
         )}
       </main>
     </QueryClientProvider>

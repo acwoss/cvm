@@ -4,6 +4,7 @@ use serde::Serialize;
 use crate::env;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EnvironmentSummary {
     pub name: String,
     pub path: String,
