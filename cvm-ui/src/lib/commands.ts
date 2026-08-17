@@ -145,3 +145,51 @@ export function enablePlugin(name: string, plugin: string): Promise<string> {
 export function disablePlugin(name: string, plugin: string): Promise<string> {
   return invoke("disable_plugin", { name, plugin });
 }
+
+export interface SkillContent {
+  name: string;
+  description: string;
+  body: string;
+}
+
+export function getSkillContent(envName: string, id: string): Promise<SkillContent> {
+  return invoke("get_skill_content", { envName, id });
+}
+
+export function writeSkillContent(envName: string, id: string, content: SkillContent): Promise<void> {
+  return invoke("write_skill_content", { envName, id, content });
+}
+
+export function createSkill(
+  envName: string,
+  id: string,
+  name: string,
+  description: string,
+): Promise<void> {
+  return invoke("create_skill", { envName, id, name, description });
+}
+
+export function deleteSkill(envName: string, id: string): Promise<void> {
+  return invoke("delete_skill", { envName, id });
+}
+
+export function getAgentContent(envName: string, id: string): Promise<SkillContent> {
+  return invoke("get_agent_content", { envName, id });
+}
+
+export function writeAgentContent(envName: string, id: string, content: SkillContent): Promise<void> {
+  return invoke("write_agent_content", { envName, id, content });
+}
+
+export function createAgent(
+  envName: string,
+  id: string,
+  name: string,
+  description: string,
+): Promise<void> {
+  return invoke("create_agent", { envName, id, name, description });
+}
+
+export function deleteAgent(envName: string, id: string): Promise<void> {
+  return invoke("delete_agent", { envName, id });
+}
