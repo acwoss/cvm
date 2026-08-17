@@ -30,14 +30,16 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
   }
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      newKind === "skill"
-        ? createSkill(envName, newId, newId, newDescription)
-        : createAgent(envName, newId, newId, newDescription),
+    mutationFn: () => {
+      const id = newId.trim();
+      return newKind === "skill"
+        ? createSkill(envName, id, id, newDescription)
+        : createAgent(envName, id, id, newDescription);
+    },
     onSuccess: () => {
       invalidate();
       const createdKind = newKind;
-      const createdId = newId;
+      const createdId = newId.trim();
       setShowNew(false);
       setNewId("");
       setNewDescription("");
@@ -70,20 +72,25 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
               <p className="text-xs text-neutral-500">{item.description}</p>
             </div>
             <div className="flex items-center gap-3 text-xs">
-              {item.builtIn && <span className="text-neutral-500">herdado</span>}
-              <button
-                onClick={() => onEdit(kind, item.id)}
-                className="text-neutral-400 underline hover:text-neutral-200"
-              >
-                editar
-              </button>
-              {!item.builtIn && (
-                <button
-                  onClick={() => handleDelete(kind, item.id)}
-                  className="text-red-400 underline hover:text-red-300"
-                >
-                  remover
-                </button>
+              {item.builtIn ? (
+                <span className="text-neutral-500" title="Herdado do ambiente global — edite pelo ambiente de origem">
+                  herdado
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onEdit(kind, item.id)}
+                    className="text-neutral-400 underline hover:text-neutral-200"
+                  >
+                    editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(kind, item.id)}
+                    className="text-red-400 underline hover:text-red-300"
+                  >
+                    remover
+                  </button>
+                </>
               )}
             </div>
           </li>

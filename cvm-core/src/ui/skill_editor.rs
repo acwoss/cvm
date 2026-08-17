@@ -18,20 +18,26 @@ struct ParsedFile {
     body: String,
 }
 
-fn parse_file(contents: &str) -> ParsedFile {
+fn parse_file(contents: &str) -> Result<ParsedFile> {
     let Some(rest) = contents.strip_prefix("---\n") else {
-        return ParsedFile {
+        return Ok(ParsedFile {
             frontmatter: Mapping::new(),
             body: contents.to_string(),
-        };
+        });
     };
     let Some(end) = rest.find("\n---") else {
-        return ParsedFile {
+        return Ok(ParsedFile {
             frontmatter: Mapping::new(),
             body: contents.to_string(),
-        };
+        });
     };
-    let frontmatter: Mapping = serde_yaml::from_str(&rest[..end]).unwrap_or_default();
+    // Propaga o erro em vez de `unwrap_or_default`: um frontmatter que não
+    // parseia (ex.: descrição com "chave: valor" não citada, YAML quebrado)
+    // não pode ser silenciosamente tratado como "sem frontmatter" — isso
+    // faria o próximo `write_content` reescrever o arquivo do zero,
+    // destruindo `tools`/`model`/etc. sem nenhum aviso ao usuário.
+    let frontmatter: Mapping =
+        serde_yaml::from_str(&rest[..end]).context("frontmatter YAML inválido")?;
     let after = &rest[end + 4..];
     // `trim_start_matches` (não `strip_prefix`) é essencial aqui: remove
     // TODAS as quebras de linha entre o fechamento do frontmatter e o
@@ -40,7 +46,7 @@ fn parse_file(contents: &str) -> ParsedFile {
     // início do corpo, já que `render_file` sempre escreve exatamente uma
     // linha em branco de separação (`---\n{yaml}---\n\n{body}`).
     let body = after.trim_start_matches('\n').to_string();
-    ParsedFile { frontmatter, body }
+    Ok(ParsedFile { frontmatter, body })
 }
 
 fn render_file(frontmatter: &Mapping, body: &str) -> Result<String> {
@@ -59,7 +65,7 @@ fn validate_id(id: &str) -> Result<()> {
 fn read_content(path: &Path, id_fallback: &str) -> Result<SkillContent> {
     let raw =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
-    let parsed = parse_file(&raw);
+    let parsed = parse_file(&raw)?;
     let name = parsed
         .frontmatter
         .get("name")
@@ -80,8 +86,16 @@ fn read_content(path: &Path, id_fallback: &str) -> Result<SkillContent> {
 }
 
 fn write_content(path: &Path, content: &SkillContent) -> Result<()> {
-    let raw = fs::read_to_string(path).unwrap_or_default();
-    let mut parsed = parse_file(&raw);
+    // Um arquivo inexistente (caso de `create_skill`/`create_agent`) é
+    // tratado como vazio; qualquer outro erro de leitura (permissão,
+    // symlink quebrado) é propagado — nunca tratado como "arquivo vazio",
+    // que faria a escrita seguinte perder o frontmatter existente.
+    let raw = match fs::read_to_string(path) {
+        Ok(raw) => raw,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(err) => return Err(err).with_context(|| format!("failed to read {}", path.display())),
+    };
+    let mut parsed = parse_file(&raw)?;
     parsed.frontmatter.insert(
         Value::String("name".to_string()),
         Value::String(content.name.clone()),
@@ -152,7 +166,10 @@ pub fn write_agent_content(env_dir: &Path, id: &str, content: &SkillContent) -> 
 
 pub fn create_agent(env_dir: &Path, id: &str, name: &str, description: &str) -> Result<()> {
     let path = agent_path(env_dir, id)?;
-    if path.exists() {
+    // `symlink_metadata` (não `exists`, que segue o link): um symlink
+    // pendurado (alvo removido) deve continuar contando como "já existe"
+    // em vez de deixar `fs::write` criar o arquivo no destino do link.
+    if path.symlink_metadata().is_ok() {
         bail!("agent '{id}' already exists");
     }
     let dir = path
@@ -333,6 +350,70 @@ mod tests {
         assert!(raw.contains("tools: Read, Grep"));
         assert!(raw.contains("model: inherit"));
         assert!(raw.contains("name: new"));
+    }
+
+    #[test]
+    fn read_content_fails_instead_of_silently_dropping_invalid_frontmatter() {
+        let dir = tempfile::tempdir().unwrap();
+        let skill_dir = dir.path().join("skills/my-skill");
+        fs::create_dir_all(&skill_dir).unwrap();
+        // "description: Use when: ..." não é YAML válido (dois-pontos não
+        // citado dentro do valor quebra o parser de mapping).
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\nname: my-skill\ndescription: Use when: the user asks\ntools: Read\n---\n\nbody\n",
+        )
+        .unwrap();
+
+        assert!(read_skill_content(dir.path(), "my-skill").is_err());
+    }
+
+    #[test]
+    fn write_content_fails_instead_of_overwriting_when_frontmatter_is_invalid() {
+        let dir = tempfile::tempdir().unwrap();
+        let skill_dir = dir.path().join("skills/my-skill");
+        fs::create_dir_all(&skill_dir).unwrap();
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\nname: my-skill\ndescription: Use when: the user asks\ntools: Read\n---\n\nbody\n",
+        )
+        .unwrap();
+
+        let result = write_skill_content(
+            dir.path(),
+            "my-skill",
+            &SkillContent {
+                name: "renamed".to_string(),
+                description: "new desc".to_string(),
+                body: "new body\n".to_string(),
+            },
+        );
+
+        assert!(result.is_err());
+        let raw = fs::read_to_string(skill_dir.join("SKILL.md")).unwrap();
+        assert!(
+            raw.contains("tools: Read"),
+            "arquivo original não deve ser tocado"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn create_agent_fails_on_a_dangling_symlink_instead_of_writing_through_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let agents_dir = dir.path().join("agents");
+        fs::create_dir_all(&agents_dir).unwrap();
+        let outside_target = dir.path().join("outside-target.md");
+        std::os::unix::fs::symlink(&outside_target, agents_dir.join("dangling.md")).unwrap();
+        assert!(!outside_target.exists());
+
+        let result = create_agent(dir.path(), "dangling", "Dangling", "x");
+
+        assert!(result.is_err());
+        assert!(
+            !outside_target.exists(),
+            "escrita não deve atravessar o symlink pendurado para fora do env_dir"
+        );
     }
 
     #[test]

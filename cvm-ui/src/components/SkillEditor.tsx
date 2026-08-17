@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { useEffect, useState } from "react";
 import type { SkillContent } from "../lib/commands";
@@ -15,6 +16,14 @@ interface Props {
   kind: "skill" | "agent";
   id: string;
   onClose: () => void;
+}
+
+// O corpo é conteúdo não confiável (skills herdadas, de marketplaces ou
+// clonadas de terceiros): `marked` não sanitiza nada, então HTML/atributos
+// de evento (`onerror`, `javascript:` em links) passariam direto para
+// `dangerouslySetInnerHTML` e teriam acesso a `window.__TAURI_INTERNALS__`.
+function renderMarkdownPreview(body: string): string {
+  return DOMPurify.sanitize(marked.parse(body, { async: false }));
 }
 
 export function SkillEditor({ envName, kind, id, onClose }: Props) {
@@ -46,6 +55,9 @@ export function SkillEditor({ envName, kind, id, onClose }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["environment-detail", envName] });
+      queryClient.invalidateQueries({
+        queryKey: [kind === "skill" ? "skill-content" : "agent-content", envName, id],
+      });
     },
   });
 
@@ -73,7 +85,7 @@ export function SkillEditor({ envName, kind, id, onClose }: Props) {
         </button>
         <button
           onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
+          disabled={!data || saveMutation.isPending}
           className="rounded border border-orange-500/40 bg-orange-500/10 px-3.5 py-1 text-xs font-semibold text-orange-400 disabled:opacity-50"
         >
           {saveMutation.isPending ? "Salvando…" : "Salvar"}
@@ -125,7 +137,7 @@ export function SkillEditor({ envName, kind, id, onClose }: Props) {
             ) : (
               <div
                 className="markdown-preview mx-auto max-w-3xl p-6 text-sm text-neutral-200"
-                dangerouslySetInnerHTML={{ __html: marked.parse(body) as string }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(body) }}
               />
             )}
           </div>
