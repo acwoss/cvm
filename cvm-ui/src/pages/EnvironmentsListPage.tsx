@@ -5,9 +5,10 @@ import { commandErrorMessage, listEnvironments } from "../lib/commands";
 
 interface Props {
   onSelect: (name: string) => void;
+  onOpenHooks: () => void;
 }
 
-export function EnvironmentsListPage({ onSelect }: Props) {
+export function EnvironmentsListPage({ onSelect, onOpenHooks }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const { data, isPending, error } = useQuery({
     queryKey: ["environments"],
@@ -18,12 +19,20 @@ export function EnvironmentsListPage({ onSelect }: Props) {
     <div>
       <div className="flex items-center justify-between px-6 py-4">
         <h1 className="text-sm font-medium text-neutral-100">Ambientes</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
-        >
-          + Novo ambiente
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenHooks}
+            className="rounded border border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+          >
+            Hooks
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
+          >
+            + Novo ambiente
+          </button>
+        </div>
       </div>
 
       {isPending && <p className="p-6 text-sm text-neutral-400">Carregando ambientes…</p>}

@@ -193,3 +193,25 @@ export function createAgent(
 export function deleteAgent(envName: string, id: string): Promise<void> {
   return invoke("delete_agent", { envName, id });
 }
+
+export interface HookSummary {
+  event: string;
+  configured: boolean;
+  preview: string | null;
+}
+
+export function listHooks(): Promise<HookSummary[]> {
+  return invoke("list_hooks");
+}
+
+export function getHook(event: string): Promise<string | null> {
+  return invoke("get_hook", { event });
+}
+
+export function writeHook(event: string, content: string): Promise<void> {
+  return invoke("write_hook", { event, content });
+}
+
+export function deleteHook(event: string): Promise<void> {
+  return invoke("delete_hook", { event });
+}
