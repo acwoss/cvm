@@ -1,1 +1,103 @@
 @import "tailwindcss";
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  font-weight: 600;
+  color: var(--color-neutral-100);
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.markdown-preview h1 {
+  font-size: 1.5em;
+}
+.markdown-preview h2 {
+  font-size: 1.25em;
+}
+.markdown-preview h3 {
+  font-size: 1.1em;
+}
+.markdown-preview :first-child {
+  margin-top: 0;
+}
+.markdown-preview p {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  line-height: 1.6;
+}
+.markdown-preview ul,
+.markdown-preview ol {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  padding-left: 1.5em;
+}
+.markdown-preview ul {
+  list-style-type: disc;
+}
+.markdown-preview ol {
+  list-style-type: decimal;
+}
+.markdown-preview li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.markdown-preview li > ul,
+.markdown-preview li > ol {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.markdown-preview a {
+  color: var(--color-orange-400);
+  text-decoration: underline;
+}
+.markdown-preview strong {
+  font-weight: 600;
+  color: var(--color-neutral-100);
+}
+.markdown-preview em {
+  font-style: italic;
+}
+.markdown-preview blockquote {
+  margin: 0.75em 0;
+  padding-left: 1em;
+  border-left: 2px solid var(--color-neutral-700);
+  color: var(--color-neutral-400);
+}
+.markdown-preview code {
+  font-family: monospace;
+  background-color: var(--color-neutral-900);
+  border: 1px solid var(--color-neutral-800);
+  border-radius: 0.25em;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.markdown-preview pre {
+  margin: 0.75em 0;
+  padding: 0.75em 1em;
+  background-color: var(--color-neutral-900);
+  border: 1px solid var(--color-neutral-800);
+  border-radius: 0.375em;
+  overflow-x: auto;
+}
+.markdown-preview pre code {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+.markdown-preview hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--color-neutral-800);
+}
+.markdown-preview table {
+  border-collapse: collapse;
+  margin: 0.75em 0;
+}
+.markdown-preview th,
+.markdown-preview td {
+  border: 1px solid var(--color-neutral-800);
+  padding: 0.4em 0.75em;
+}

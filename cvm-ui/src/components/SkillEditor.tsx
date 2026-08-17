@@ -124,7 +124,7 @@ export function SkillEditor({ envName, kind, id, onClose }: Props) {
               />
             ) : (
               <div
-                className="prose prose-invert mx-auto max-w-3xl p-6 text-sm"
+                className="markdown-preview mx-auto max-w-3xl p-6 text-sm text-neutral-200"
                 dangerouslySetInnerHTML={{ __html: marked.parse(body) as string }}
               />
             )}
