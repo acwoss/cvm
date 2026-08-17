@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::{Command, ExitStatus, Stdio};
 
 use anyhow::{bail, Context, Result};
 
@@ -358,11 +358,171 @@ pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
 /// Como `open_env`, mas não espera o processo filho terminar - para quem
 /// chama (como a UI) e não pode bloquear seu próprio loop de eventos numa
 /// sessão longa do `claude`.
+///
+/// Launches a brand new terminal emulator window running `claude`, rather
+/// than spawning `claude` directly and inheriting whatever stdio the caller
+/// happens to have. `claude` is an interactive TUI, so spawning it directly
+/// only works when the caller (e.g. the cvm-ui desktop app) happens to have
+/// inherited a real controlling terminal, which is not guaranteed (e.g. when
+/// launched from a desktop icon).
 pub fn open_env_detached(name: &str) -> Result<()> {
-    prepare_env_command(name, "claude", &[])?
+    let dir = ensure_env_exists(name)?;
+    ensure_env_bin(&dir)?;
+    let env_vars = load_env_file(&dir)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        return open_via_macos_terminal(&dir, name, &env_vars);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let mut paths = vec![env_bin_dir(&dir)];
+        paths.extend(env::split_paths(&env::var_os("PATH").unwrap_or_default()));
+        let path = env::join_paths(paths).context("failed to prepend environment bin to PATH")?;
+        let mut cmd = terminal_command()?;
+        cmd.envs(env_vars)
+            .env(CONFIG_DIR_VAR, &dir)
+            .env(ACTIVE_ENV_VAR, name)
+            .env("PATH", path)
+            // The new terminal emulator window has its own stdio; it must
+            // not inherit the caller's (a GUI app may have none at all, and
+            // some terminal emulators - e.g. Debian's x-terminal-emulator
+            // wrapper around gnome-terminal - hold `--wait` open on the
+            // inner command, which would otherwise keep the caller's
+            // stdout/stderr pipes open for as long as that window stays up).
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        cmd.spawn()
+            .context("failed to launch a terminal for 'claude'")?;
+        Ok(())
+    }
+}
+
+/// Finds the first terminal emulator from a fixed candidate list that's
+/// present on `PATH`, and returns a `Command` for it pre-armed to run
+/// `claude` inside it. Every argument is passed as a separate argv entry
+/// (never interpolated into a shell command string), so this carries no
+/// injection risk regardless of what characters an environment name or
+/// path might contain - none of that ever reaches this function anyway,
+/// since the actual env vars are applied to the returned `Command` itself
+/// via `Command::envs`/`Command::env` by the caller.
+#[cfg(target_os = "linux")]
+fn terminal_command() -> Result<Command> {
+    const CANDIDATES: &[&str] = &[
+        "x-terminal-emulator",
+        "gnome-terminal",
+        "konsole",
+        "xfce4-terminal",
+        "alacritty",
+        "kitty",
+    ];
+    for name in CANDIDATES {
+        if is_on_path(name) {
+            let mut cmd = Command::new(name);
+            if *name == "gnome-terminal" {
+                cmd.arg("--").arg("claude");
+            } else {
+                cmd.arg("-e").arg("claude");
+            }
+            return Ok(cmd);
+        }
+    }
+    bail!(
+        "no terminal emulator found on PATH (tried: {})",
+        CANDIDATES.join(", ")
+    )
+}
+
+#[cfg(target_os = "linux")]
+fn is_on_path(program: &str) -> bool {
+    env::var_os("PATH")
+        .map(|paths| env::split_paths(&paths).any(|dir| dir.join(program).is_file()))
+        .unwrap_or(false)
+}
+
+/// `cmd /K` runs `claude` in the *same* `cmd.exe` process whose environment
+/// is set via `Command::envs`/`Command::env` on the returned `Command`
+/// before spawning, so this needs no string interpolation of the
+/// environment name or any path into a command string either.
+#[cfg(target_os = "windows")]
+fn terminal_command() -> Result<Command> {
+    let mut cmd = Command::new("cmd");
+    cmd.args(["/C", "start", "", "cmd", "/K", "claude"]);
+    Ok(cmd)
+}
+
+/// Opens a new Terminal.app window running `claude` scoped to `env_name`.
+///
+/// Terminal.app, launched via `open -a Terminal`, always starts a fresh
+/// login shell that does NOT inherit the launching process's environment
+/// variables - so setting them on the `Command` that runs `open` (as the
+/// other platforms do) would have no effect on what runs inside the new
+/// window. The only way to get the right env vars into that new session is
+/// to write them into a small shell script file and have Terminal.app run
+/// that script instead.
+///
+/// Because the script's *content* embeds `env_name`, `claude_dir`, and every
+/// `.env` value as literal text, each of those is shell-escaped via
+/// `shell_single_quote` before being written - this is the one place in
+/// this module where injection risk is real if done carelessly.
+#[cfg(target_os = "macos")]
+fn open_via_macos_terminal(
+    claude_dir: &Path,
+    env_name: &str,
+    env_vars: &[(String, String)],
+) -> Result<()> {
+    let mut script = String::from("#!/bin/sh\n");
+    for (key, value) in env_vars {
+        script.push_str(&format!("export {}={}\n", key, shell_single_quote(value)));
+    }
+    script.push_str(&format!(
+        "export {}={}\n",
+        CONFIG_DIR_VAR,
+        shell_single_quote(&claude_dir.display().to_string())
+    ));
+    script.push_str(&format!(
+        "export {}={}\n",
+        ACTIVE_ENV_VAR,
+        shell_single_quote(env_name)
+    ));
+    script.push_str("exec claude\n");
+
+    let script_path =
+        env::temp_dir().join(format!("cvm-open-{env_name}-{}.sh", std::process::id()));
+    fs::write(&script_path, script)
+        .with_context(|| format!("failed to write {}", script_path.display()))?;
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&script_path, fs::Permissions::from_mode(0o700))
+            .with_context(|| format!("failed to chmod {}", script_path.display()))?;
+    }
+    let script_path_str = script_path
+        .to_str()
+        .context("temp script path is not valid UTF-8")?;
+    Command::new("open")
+        .args(["-a", "Terminal", script_path_str])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
-        .context("failed to launch 'claude'")?;
+        .context("failed to open Terminal.app")?;
     Ok(())
+}
+
+/// Wraps `value` in single quotes for safe embedding in a POSIX shell
+/// script, escaping any single quote it contains (`'` -> `'\''`). Note this
+/// only protects the two structurally-controlled values it's used for
+/// (an environment's name and its config directory path) plus every `.env`
+/// value; `.env` variable *names* (as opposed to values) are still assumed
+/// to be reasonable identifiers, same as `load_env_file` already assumes
+/// elsewhere in this file - this is a pre-existing trust boundary (a user's
+/// own local `.env` file on their own machine), not one this function newly
+/// introduces.
+#[cfg(target_os = "macos")]
+fn shell_single_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', r"'\''"))
 }
 
 /// Loads `KEY=VALUE` pairs from an environment directory's `.env` file.
@@ -961,6 +1121,29 @@ mod tests {
             }
             let _ = home;
 
+            // On Linux, open_env_detached now launches a real terminal
+            // emulator rather than the shim above directly - point PATH at
+            // a fake one that also sleeps, so this test doesn't pop open a
+            // real terminal window (some `x-terminal-emulator` alternatives,
+            // e.g. Debian's gnome-terminal wrapper, run with `--wait`, which
+            // would otherwise leave an orphaned process around after the
+            // test ends).
+            #[cfg(target_os = "linux")]
+            let old_path = {
+                let fake_bin_dir = home.join("fake-bin");
+                fs::create_dir_all(&fake_bin_dir).unwrap();
+                let fake_terminal = fake_bin_dir.join("x-terminal-emulator");
+                fs::write(&fake_terminal, "#!/bin/sh\nsleep 5\n").unwrap();
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&fake_terminal, fs::Permissions::from_mode(0o755)).unwrap();
+                let old_path = env::var("PATH").unwrap_or_default();
+                // SAFETY: guardado por HOME_LOCK (mantido por with_temp_home).
+                unsafe {
+                    env::set_var("PATH", format!("{}:{}", fake_bin_dir.display(), old_path));
+                }
+                old_path
+            };
+
             let start = std::time::Instant::now();
             open_env_detached("work").unwrap();
 
@@ -968,6 +1151,64 @@ mod tests {
                 start.elapsed().as_secs() < 5,
                 "open_env_detached must not block on the child process"
             );
+
+            #[cfg(target_os = "linux")]
+            // SAFETY: guardado por HOME_LOCK.
+            unsafe {
+                env::set_var("PATH", old_path);
+            }
         });
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn open_env_detached_launches_a_terminal_emulator_with_the_right_env() {
+        with_temp_home(|home| {
+            create_env("work", true, false).unwrap();
+
+            // Fake "x-terminal-emulator" that records its argv and env, then exits immediately.
+            let fake_bin_dir = home.join("fake-bin");
+            fs::create_dir_all(&fake_bin_dir).unwrap();
+            let capture_file = home.join("terminal-invocation.txt");
+            let fake_terminal = fake_bin_dir.join("x-terminal-emulator");
+            fs::write(
+                &fake_terminal,
+                format!(
+                    "#!/bin/sh\necho \"args:$@ env:$CLAUDE_CONFIG_DIR,$CVM_ENV\" > {}\n",
+                    capture_file.display()
+                ),
+            )
+            .unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&fake_terminal, fs::Permissions::from_mode(0o755)).unwrap();
+
+            let old_path = env::var("PATH").unwrap_or_default();
+            // SAFETY: guardado por HOME_LOCK (mantido por with_temp_home).
+            unsafe {
+                env::set_var("PATH", format!("{}:{}", fake_bin_dir.display(), old_path));
+            }
+
+            open_env_detached("work").unwrap();
+            // Give the spawned (non-waited-on) child a moment to write its capture file.
+            std::thread::sleep(std::time::Duration::from_millis(200));
+
+            let captured = fs::read_to_string(&capture_file).unwrap();
+            assert!(captured.contains("-e claude") || captured.contains("claude"));
+            assert!(captured.contains(&env_dir("work").unwrap().display().to_string()));
+            assert!(captured.contains("work"));
+
+            // SAFETY: guardado por HOME_LOCK.
+            unsafe {
+                env::set_var("PATH", old_path);
+            }
+        });
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn shell_single_quote_escapes_embedded_single_quotes() {
+        assert_eq!(shell_single_quote("simple"), "'simple'");
+        assert_eq!(shell_single_quote("it's here"), r"'it'\''s here'");
+        assert_eq!(shell_single_quote(""), "''");
     }
 }
