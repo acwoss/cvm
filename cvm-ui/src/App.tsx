@@ -1,8 +1,27 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { EnvironmentsListPage } from "./pages/EnvironmentsListPage";
+
+const queryClient = new QueryClient();
+
 function App() {
+  const [selected, setSelected] = useState<string | null>(null);
+
   return (
-    <main className="flex h-screen items-center justify-center bg-neutral-950 text-neutral-100">
-      <p className="text-sm text-neutral-400">cvm-ui — em construção</p>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <main className="min-h-screen bg-neutral-950 text-neutral-100">
+        {selected === null ? (
+          <EnvironmentsListPage onSelect={setSelected} />
+        ) : (
+          <p className="p-6 text-sm text-neutral-400">
+            Detalhe de "{selected}" — implementado na próxima task.{" "}
+            <button className="underline" onClick={() => setSelected(null)}>
+              Voltar
+            </button>
+          </p>
+        )}
+      </main>
+    </QueryClientProvider>
   );
 }
 
