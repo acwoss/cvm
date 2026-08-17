@@ -1,5 +1,7 @@
 use cvm_core::env;
-use cvm_core::ui::{self, EnvVarSource, EnvironmentDetail, EnvironmentSummary, SkillContent};
+use cvm_core::ui::{
+    self, EnvVarSource, EnvironmentDetail, EnvironmentSummary, HookSummary, SkillContent,
+};
 
 /// Erro serializável para o frontend - `anyhow::Error` não implementa
 /// `serde::Serialize`, então toda falha de `cvm-core` é convertida para sua
@@ -201,5 +203,27 @@ pub fn create_agent(
 pub fn delete_agent(env_name: String, id: String) -> Result<(), CommandError> {
     let dir = env::ensure_env_exists(&env_name)?;
     ui::delete_agent(&dir, &id)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn list_hooks() -> Result<Vec<HookSummary>, CommandError> {
+    Ok(ui::list_hooks()?)
+}
+
+#[tauri::command]
+pub fn get_hook(event: String) -> Result<Option<String>, CommandError> {
+    Ok(ui::read_hook(&event)?)
+}
+
+#[tauri::command]
+pub fn write_hook(event: String, content: String) -> Result<(), CommandError> {
+    ui::write_hook(&event, &content)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_hook(event: String) -> Result<(), CommandError> {
+    ui::delete_hook(&event)?;
     Ok(())
 }

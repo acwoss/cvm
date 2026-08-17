@@ -28,6 +28,10 @@ pub fn run() {
             commands::write_agent_content,
             commands::create_agent,
             commands::delete_agent,
+            commands::list_hooks,
+            commands::get_hook,
+            commands::write_hook,
+            commands::delete_hook,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
