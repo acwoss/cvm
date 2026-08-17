@@ -20,6 +20,14 @@ pub fn run() {
             commands::uninstall_plugin,
             commands::enable_plugin,
             commands::disable_plugin,
+            commands::get_skill_content,
+            commands::write_skill_content,
+            commands::create_skill,
+            commands::delete_skill,
+            commands::get_agent_content,
+            commands::write_agent_content,
+            commands::create_agent,
+            commands::delete_agent,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

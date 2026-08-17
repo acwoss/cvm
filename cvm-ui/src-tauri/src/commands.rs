@@ -1,5 +1,5 @@
 use cvm_core::env;
-use cvm_core::ui::{self, EnvVarSource, EnvironmentDetail, EnvironmentSummary};
+use cvm_core::ui::{self, EnvVarSource, EnvironmentDetail, EnvironmentSummary, SkillContent};
 
 /// Erro serializável para o frontend - `anyhow::Error` não implementa
 /// `serde::Serialize`, então toda falha de `cvm-core` é convertida para sua
@@ -130,4 +130,76 @@ pub fn enable_plugin(name: String, plugin: String) -> Result<String, CommandErro
 #[tauri::command]
 pub fn disable_plugin(name: String, plugin: String) -> Result<String, CommandError> {
     run_claude_plugin_command(&name, &["plugin", "disable", &plugin])
+}
+
+#[tauri::command]
+pub fn get_skill_content(env_name: String, id: String) -> Result<SkillContent, CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    Ok(ui::read_skill_content(&dir, &id)?)
+}
+
+#[tauri::command]
+pub fn write_skill_content(
+    env_name: String,
+    id: String,
+    content: SkillContent,
+) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::write_skill_content(&dir, &id, &content)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn create_skill(
+    env_name: String,
+    id: String,
+    name: String,
+    description: String,
+) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::create_skill(&dir, &id, &name, &description)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_skill(env_name: String, id: String) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::delete_skill(&dir, &id)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_agent_content(env_name: String, id: String) -> Result<SkillContent, CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    Ok(ui::read_agent_content(&dir, &id)?)
+}
+
+#[tauri::command]
+pub fn write_agent_content(
+    env_name: String,
+    id: String,
+    content: SkillContent,
+) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::write_agent_content(&dir, &id, &content)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn create_agent(
+    env_name: String,
+    id: String,
+    name: String,
+    description: String,
+) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::create_agent(&dir, &id, &name, &description)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_agent(env_name: String, id: String) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::delete_agent(&dir, &id)?;
+    Ok(())
 }
