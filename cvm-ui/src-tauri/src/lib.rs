@@ -9,6 +9,8 @@ pub fn run() {
             commands::get_environment_detail,
             commands::reveal_env_var,
             commands::open_in_claude,
+            commands::create_environment,
+            commands::remove_environment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

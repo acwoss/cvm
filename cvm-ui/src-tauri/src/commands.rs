@@ -41,3 +41,23 @@ pub fn reveal_env_var(
 pub fn open_in_claude(name: String) -> Result<(), CommandError> {
     Ok(env::open_env_detached(&name)?)
 }
+
+#[tauri::command]
+pub fn create_environment(
+    name: String,
+    anonymous: bool,
+    inherit: bool,
+    open: bool,
+) -> Result<(), CommandError> {
+    env::create_env(&name, anonymous, inherit)?;
+    if open {
+        env::open_env_detached(&name)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn remove_environment(name: String) -> Result<(), CommandError> {
+    env::remove_env(&name)?;
+    Ok(())
+}
