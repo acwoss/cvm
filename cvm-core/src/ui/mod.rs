@@ -6,8 +6,8 @@ mod summary;
 
 pub use account::AccountInfo;
 pub use config::{
-    list_env_var_summaries, read_config_section, reveal_value, ConfigSection, EnvVarSource,
-    EnvVarSummary,
+    list_env_var_summaries, read_config_section, remove_env_var, reveal_value,
+    write_config_section, write_env_var, ConfigSection, EnvVarSource, EnvVarSummary,
 };
 pub use marketplaces::{list_marketplaces, MarketplaceInfo, PluginInfo};
 pub use skills::{list_agents, list_skills, SkillOrAgentInfo};

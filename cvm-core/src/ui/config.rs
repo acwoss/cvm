@@ -122,6 +122,88 @@ pub fn reveal_value(env_dir: &Path, source: EnvVarSource, key: &str) -> Result<S
     }
 }
 
+fn modify_settings_json(
+    env_dir: &Path,
+    f: impl FnOnce(&mut serde_json::Map<String, Value>) -> Result<()>,
+) -> Result<()> {
+    let path = env_dir.join("settings.json");
+    let mut value: Value = if path.is_file() {
+        serde_json::from_str(
+            &fs::read_to_string(&path)
+                .with_context(|| format!("failed to read {}", path.display()))?,
+        )
+        .with_context(|| format!("failed to parse {}", path.display()))?
+    } else {
+        Value::Object(serde_json::Map::new())
+    };
+    let obj = value
+        .as_object_mut()
+        .context("settings.json must be a JSON object")?;
+    f(obj)?;
+    fs::write(&path, serde_json::to_string_pretty(&value)?)
+        .with_context(|| format!("failed to write {}", path.display()))
+}
+
+pub fn write_config_section(
+    env_dir: &Path,
+    allowed_tools: &[String],
+    denied_tools: &[String],
+) -> Result<()> {
+    modify_settings_json(env_dir, |obj| {
+        let permissions_obj = obj
+            .entry("permissions")
+            .or_insert_with(|| Value::Object(serde_json::Map::new()))
+            .as_object_mut()
+            .context("settings.json permissions must be an object")?;
+        permissions_obj.insert(
+            "allow".to_string(),
+            serde_json::to_value(allowed_tools).context("failed to serialize allowed tools")?,
+        );
+        permissions_obj.insert(
+            "deny".to_string(),
+            serde_json::to_value(denied_tools).context("failed to serialize denied tools")?,
+        );
+        Ok(())
+    })
+}
+
+pub fn write_env_var(env_dir: &Path, source: EnvVarSource, key: &str, value: &str) -> Result<()> {
+    match source {
+        EnvVarSource::Dotenv => {
+            let mut vars: std::collections::BTreeMap<String, String> =
+                env::load_env_file(env_dir)?.into_iter().collect();
+            vars.insert(key.to_string(), value.to_string());
+            env::write_env_file(env_dir, &vars)
+        }
+        EnvVarSource::Settings => modify_settings_json(env_dir, |obj| {
+            let env_obj = obj
+                .entry("env")
+                .or_insert_with(|| Value::Object(serde_json::Map::new()))
+                .as_object_mut()
+                .context("settings.json env must be an object")?;
+            env_obj.insert(key.to_string(), Value::String(value.to_string()));
+            Ok(())
+        }),
+    }
+}
+
+pub fn remove_env_var(env_dir: &Path, source: EnvVarSource, key: &str) -> Result<()> {
+    match source {
+        EnvVarSource::Dotenv => {
+            let mut vars: std::collections::BTreeMap<String, String> =
+                env::load_env_file(env_dir)?.into_iter().collect();
+            vars.remove(key);
+            env::write_env_file(env_dir, &vars)
+        }
+        EnvVarSource::Settings => modify_settings_json(env_dir, |obj| {
+            if let Some(env_obj) = obj.get_mut("env").and_then(|v| v.as_object_mut()) {
+                env_obj.remove(key);
+            }
+            Ok(())
+        }),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -225,5 +307,104 @@ mod tests {
 
         assert!(config.other.get("env").is_none());
         assert_eq!(config.other["theme"], "dark");
+    }
+
+    #[test]
+    fn write_config_section_updates_permissions_and_preserves_other_keys() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("settings.json"),
+            r#"{"theme":"dark","permissions":{"allow":["old-tool"]}}"#,
+        )
+        .unwrap();
+
+        write_config_section(
+            dir.path(),
+            &["read-file".to_string(), "write-file".to_string()],
+            &["exec".to_string()],
+        )
+        .unwrap();
+
+        let raw = fs::read_to_string(dir.path().join("settings.json")).unwrap();
+        let value: Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(value["theme"], "dark");
+        assert_eq!(
+            value["permissions"]["allow"],
+            serde_json::json!(["read-file", "write-file"])
+        );
+        assert_eq!(value["permissions"]["deny"], serde_json::json!(["exec"]));
+    }
+
+    #[test]
+    fn write_config_section_creates_settings_json_when_missing() {
+        let dir = tempfile::tempdir().unwrap();
+
+        write_config_section(dir.path(), &["read-file".to_string()], &[]).unwrap();
+
+        let config = read_config_section(dir.path()).unwrap();
+        assert_eq!(config.allowed_tools, vec!["read-file".to_string()]);
+    }
+
+    #[test]
+    fn write_env_var_adds_to_dotenv() {
+        let dir = tempfile::tempdir().unwrap();
+
+        write_env_var(dir.path(), EnvVarSource::Dotenv, "NEW_VAR", "hello").unwrap();
+
+        let value = reveal_value(dir.path(), EnvVarSource::Dotenv, "NEW_VAR").unwrap();
+        assert_eq!(value, "hello");
+    }
+
+    #[test]
+    fn write_env_var_adds_to_settings_json_env_block() {
+        let dir = tempfile::tempdir().unwrap();
+
+        write_env_var(dir.path(), EnvVarSource::Settings, "NEW_VAR", "hello").unwrap();
+
+        let value = reveal_value(dir.path(), EnvVarSource::Settings, "NEW_VAR").unwrap();
+        assert_eq!(value, "hello");
+    }
+
+    #[test]
+    fn write_env_var_preserves_other_dotenv_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(".env"), "EXISTING=value\n").unwrap();
+
+        write_env_var(dir.path(), EnvVarSource::Dotenv, "NEW_VAR", "hello").unwrap();
+
+        let existing = reveal_value(dir.path(), EnvVarSource::Dotenv, "EXISTING").unwrap();
+        assert_eq!(existing, "value");
+    }
+
+    #[test]
+    fn remove_env_var_removes_from_dotenv() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(".env"), "TO_REMOVE=value\nKEEP=other\n").unwrap();
+
+        remove_env_var(dir.path(), EnvVarSource::Dotenv, "TO_REMOVE").unwrap();
+
+        let vars = list_env_var_summaries(dir.path()).unwrap();
+        assert!(!vars.iter().any(|v| v.key == "TO_REMOVE"));
+        assert!(vars.iter().any(|v| v.key == "KEEP"));
+    }
+
+    #[test]
+    fn remove_env_var_removes_from_settings_json_env_block() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("settings.json"),
+            r#"{"env":{"TO_REMOVE":"value","KEEP":"other"}}"#,
+        )
+        .unwrap();
+
+        remove_env_var(dir.path(), EnvVarSource::Settings, "TO_REMOVE").unwrap();
+
+        let vars = list_env_var_summaries(dir.path()).unwrap();
+        assert!(!vars
+            .iter()
+            .any(|v| v.key == "TO_REMOVE" && v.source == EnvVarSource::Settings));
+        assert!(vars
+            .iter()
+            .any(|v| v.key == "KEEP" && v.source == EnvVarSource::Settings));
     }
 }
