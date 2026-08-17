@@ -108,3 +108,16 @@ export function writeConfigSection(
 ): Promise<void> {
   return invoke("write_config_section", { name, allowedTools, deniedTools });
 }
+
+export function writeEnvVar(
+  name: string,
+  source: EnvVarSource,
+  key: string,
+  value: string,
+): Promise<void> {
+  return invoke("write_env_var", { name, source, key, value });
+}
+
+export function removeEnvVar(name: string, source: EnvVarSource, key: string): Promise<void> {
+  return invoke("remove_env_var", { name, source, key });
+}
