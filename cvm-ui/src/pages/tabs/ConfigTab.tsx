@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { commandErrorMessage, removeEnvironment } from "../../lib/commands";
+import { useState } from "react";
+import { commandErrorMessage, removeEnvironment, writeConfigSection } from "../../lib/commands";
 import type { ConfigSection } from "../../lib/commands";
 
 interface Props {
@@ -10,6 +11,27 @@ interface Props {
 
 export function ConfigTab({ config, envName, onRemoved }: Props) {
   const queryClient = useQueryClient();
+  const [allowedTools, setAllowedTools] = useState(config.allowedTools.join("\n"));
+  const [deniedTools, setDeniedTools] = useState(config.deniedTools.join("\n"));
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      writeConfigSection(
+        envName,
+        allowedTools
+          .split("\n")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        deniedTools
+          .split("\n")
+          .map((t) => t.trim())
+          .filter(Boolean),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["environment-detail", envName] });
+    },
+  });
+
   const removeMutation = useMutation({
     mutationFn: () => removeEnvironment(envName),
     onSuccess: () => {
@@ -28,12 +50,37 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
     <div className="space-y-4 p-6 text-sm">
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Allowed tools</h3>
-        <p className="text-neutral-400">{config.allowedTools.join(", ") || "—"}</p>
+        <p className="mb-2 text-xs text-neutral-500">Uma ferramenta por linha.</p>
+        <textarea
+          value={allowedTools}
+          onChange={(e) => setAllowedTools(e.target.value)}
+          rows={4}
+          className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-xs text-neutral-100 outline-none focus:border-neutral-500"
+        />
       </section>
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Denied tools</h3>
-        <p className="text-neutral-400">{config.deniedTools.join(", ") || "—"}</p>
+        <p className="mb-2 text-xs text-neutral-500">Uma ferramenta por linha.</p>
+        <textarea
+          value={deniedTools}
+          onChange={(e) => setDeniedTools(e.target.value)}
+          rows={4}
+          className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-xs text-neutral-100 outline-none focus:border-neutral-500"
+        />
       </section>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
+        >
+          {saveMutation.isPending ? "Salvando…" : "Salvar"}
+        </button>
+        {saveMutation.isSuccess && <span className="text-xs text-emerald-400">Salvo.</span>}
+        {saveMutation.error && (
+          <span className="text-xs text-red-400">Erro: {commandErrorMessage(saveMutation.error)}</span>
+        )}
+      </div>
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Outras chaves (settings.json)</h3>
         <pre className="overflow-x-auto rounded bg-neutral-900 p-3 text-xs text-neutral-400">

@@ -100,3 +100,11 @@ export function createEnvironment(
 export function removeEnvironment(name: string): Promise<void> {
   return invoke("remove_environment", { name });
 }
+
+export function writeConfigSection(
+  name: string,
+  allowedTools: string[],
+  deniedTools: string[],
+): Promise<void> {
+  return invoke("write_config_section", { name, allowedTools, deniedTools });
+}
