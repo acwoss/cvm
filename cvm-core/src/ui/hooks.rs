@@ -50,18 +50,26 @@ fn preview_line(content: &str) -> Option<String> {
 
 pub fn list_hooks() -> Result<Vec<HookSummary>> {
     let dir = crate::hooks::hooks_dir()?;
-    HOOK_EVENTS
+    Ok(HOOK_EVENTS
         .iter()
         .map(|&event| {
             let path = crate::hooks::hook_path(&dir, event);
-            let content = fs::read_to_string(&path).ok();
-            Ok(HookSummary {
+            // `is_file` (não o sucesso de `read_to_string`) para bater com o
+            // critério real que `execute_hook` usa: um arquivo presente mas
+            // não-UTF8 ou ilegível ainda é "configurado" de verdade (o cvm
+            // vai tentar executá-lo no próximo lifecycle), só sem prévia.
+            let configured = path.is_file();
+            let preview = fs::read_to_string(&path)
+                .ok()
+                .as_deref()
+                .and_then(preview_line);
+            HookSummary {
                 event: event.to_string(),
-                configured: content.is_some(),
-                preview: content.as_deref().and_then(preview_line),
-            })
+                configured,
+                preview,
+            }
         })
-        .collect()
+        .collect())
 }
 
 pub fn read_hook(event: &str) -> Result<Option<String>> {
@@ -88,7 +96,10 @@ pub fn write_hook(event: &str, content: &str) -> Result<()> {
         let mut perms = fs::metadata(&path)
             .with_context(|| format!("failed to stat {}", path.display()))?
             .permissions();
-        perms.set_mode(perms.mode() | 0o111);
+        // Só o bit de execução do dono - não amplia group/other além do que
+        // já estava lá (evita, por exemplo, transformar um arquivo 0o600 em
+        // 0o711 e dar execução a group/other que não tinham nem leitura).
+        perms.set_mode(perms.mode() | 0o100);
         fs::set_permissions(&path, perms)
             .with_context(|| format!("failed to chmod +x {}", path.display()))?;
     }
@@ -186,6 +197,45 @@ mod tests {
             let path = crate::hooks::hook_path(&dir, "pre-remove");
             let mode = fs::metadata(&path).unwrap().permissions().mode();
             assert_ne!(mode & 0o111, 0, "hook deve ficar executável após salvar");
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn list_hooks_reports_configured_even_when_content_is_not_valid_utf8() {
+        with_temp_home(|_home| {
+            let dir = crate::hooks::hooks_dir().unwrap();
+            fs::create_dir_all(&dir).unwrap();
+            let path = crate::hooks::hook_path(&dir, "post-create");
+            fs::write(&path, [0xFF, 0xFE, 0x00]).unwrap();
+
+            let hooks = list_hooks().unwrap();
+            let entry = hooks.iter().find(|h| h.event == "post-create").unwrap();
+
+            assert!(
+                entry.configured,
+                "um arquivo presente mas não-UTF8 ainda é executado pelo cvm, então deve contar como configurado"
+            );
+            assert_eq!(entry.preview, None);
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_hook_does_not_grant_group_or_other_execute() {
+        use std::os::unix::fs::PermissionsExt;
+
+        with_temp_home(|_home| {
+            write_hook("pre-remove", "#!/bin/sh\nexit 0\n").unwrap();
+
+            let dir = crate::hooks::hooks_dir().unwrap();
+            let path = crate::hooks::hook_path(&dir, "pre-remove");
+            let mode = fs::metadata(&path).unwrap().permissions().mode();
+            assert_eq!(
+                mode & 0o011,
+                0,
+                "não deve conceder execução a group/other, só ao dono"
+            );
         });
     }
 

@@ -18,7 +18,14 @@ export function HooksPage({ onBack }: Props) {
 
   const deleteMutation = useMutation({
     mutationFn: (event: string) => deleteHook(event),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hooks"] }),
+    onSuccess: (_data, event) => {
+      queryClient.invalidateQueries({ queryKey: ["hooks"] });
+      // As 7 linhas são fixas e continuam clicáveis após remover — sem
+      // isso, reabrir o editor do evento removido serviria o script antigo
+      // do cache antes do refetch corrigir para `null`, e salvar nessa
+      // janela recriaria o arquivo que acabou de ser apagado.
+      queryClient.invalidateQueries({ queryKey: ["hook-content", event] });
+    },
   });
 
   function handleDelete(event: string) {
@@ -28,7 +35,7 @@ export function HooksPage({ onBack }: Props) {
   }
 
   if (editingEvent) {
-    return <HookEditor event={editingEvent} onClose={() => setEditingEvent(null)} />;
+    return <HookEditor key={editingEvent} event={editingEvent} onClose={() => setEditingEvent(null)} />;
   }
 
   return (
@@ -62,7 +69,8 @@ export function HooksPage({ onBack }: Props) {
               {hook.configured && (
                 <button
                   onClick={() => handleDelete(hook.event)}
-                  className="text-xs text-red-400 underline hover:text-red-300"
+                  disabled={deleteMutation.isPending}
+                  className="text-xs text-red-400 underline hover:text-red-300 disabled:opacity-50"
                 >
                   remover
                 </button>
