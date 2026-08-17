@@ -76,7 +76,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
               </button>
             ))}
           </nav>
-          {tab === "config" && <ConfigTab config={data.config} />}
+          {tab === "config" && <ConfigTab config={data.config} envName={name} onRemoved={onBack} />}
           {tab === "envvars" && <EnvVarsTab envName={name} envVars={data.envVars} />}
           {tab === "marketplaces" && <MarketplacesTab marketplaces={data.marketplaces} />}
           {tab === "skills" && <SkillsAgentsTab skills={data.skills} agents={data.agents} />}
