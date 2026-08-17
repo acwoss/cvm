@@ -1,10 +1,8 @@
 mod cli;
-mod env;
-mod hooks;
-mod manifest;
 mod shell;
-mod shims;
 mod update;
+
+use cvm_core::{env, manifest};
 
 use std::io::{self, Write};
 use std::path::PathBuf;

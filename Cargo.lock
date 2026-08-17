@@ -146,9 +146,19 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
+ "cvm-core",
  "dialoguer",
- "dirs",
  "self-replace",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "cvm-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs",
  "serde",
  "serde_json",
  "serde_yaml",
