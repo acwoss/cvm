@@ -326,15 +326,9 @@ pub fn resolve_deactivate() -> Result<Vec<String>> {
     Ok(vars)
 }
 
-/// Runs `command` as a child process with `CLAUDE_CONFIG_DIR`/`CVM_ENV`, plus
-/// any variables from `name`'s `.env` file, scoped to that one process -
-/// never touching the parent shell's environment.
-pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
+fn prepare_env_command(name: &str, program: &str, args: &[String]) -> Result<Command> {
     let dir = ensure_env_exists(name)?;
     ensure_env_bin(&dir)?;
-    let Some((program, args)) = command.split_first() else {
-        bail!("no command given to run");
-    };
     let env_vars = load_env_file(&dir)?;
     let mut paths = vec![env_bin_dir(&dir)];
     paths.extend(env::split_paths(&env::var_os("PATH").unwrap_or_default()));
@@ -345,10 +339,30 @@ pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
         .env(CONFIG_DIR_VAR, &dir)
         .env(ACTIVE_ENV_VAR, name)
         .env("PATH", path);
-    let status: ExitStatus = cmd
+    Ok(cmd)
+}
+
+/// Runs `command` as a child process with `CLAUDE_CONFIG_DIR`/`CVM_ENV`, plus
+/// any variables from `name`'s `.env` file, scoped to that one process -
+/// never touching the parent shell's environment.
+pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
+    let Some((program, args)) = command.split_first() else {
+        bail!("no command given to run");
+    };
+    let status: ExitStatus = prepare_env_command(name, program, args)?
         .status()
         .with_context(|| format!("failed to execute '{program}'"))?;
     Ok(status.code().unwrap_or(1))
+}
+
+/// Como `open_env`, mas não espera o processo filho terminar - para quem
+/// chama (como a UI) e não pode bloquear seu próprio loop de eventos numa
+/// sessão longa do `claude`.
+pub fn open_env_detached(name: &str) -> Result<()> {
+    prepare_env_command(name, "claude", &[])?
+        .spawn()
+        .context("failed to launch 'claude'")?;
+    Ok(())
 }
 
 /// Loads `KEY=VALUE` pairs from an environment directory's `.env` file.
@@ -930,6 +944,33 @@ mod tests {
             assert!(
                 dir.is_dir(),
                 "environment must not be deleted when pre-remove fails"
+            );
+        });
+    }
+
+    #[test]
+    fn open_env_detached_spawns_without_waiting_for_exit() {
+        with_temp_home(|home| {
+            create_env("work", true, false).unwrap();
+            let bin_dir = env_dir("work").unwrap().join("bin");
+            // Sobrescreve o shim "claude" por um script que dorme, para provar
+            // que open_env_detached não bloqueia esperando ele terminar.
+            let claude_shim = bin_dir.join("claude");
+            std::fs::write(&claude_shim, "#!/bin/sh\nsleep 5\n").unwrap();
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&claude_shim, std::fs::Permissions::from_mode(0o755))
+                    .unwrap();
+            }
+            let _ = home;
+
+            let start = std::time::Instant::now();
+            open_env_detached("work").unwrap();
+
+            assert!(
+                start.elapsed().as_secs() < 5,
+                "open_env_detached must not block on the child process"
             );
         });
     }
