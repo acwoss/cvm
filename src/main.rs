@@ -1,4 +1,5 @@
 mod cli;
+mod launch;
 mod shell;
 mod update;
 
@@ -101,6 +102,7 @@ fn run() -> Result<()> {
         Command::Import { file, name } => cmd_import(file, name)?,
         Command::ResolveActivate { env_name } => cmd_resolve_activate(&env_name)?,
         Command::ResolveDeactivate => cmd_resolve_deactivate()?,
+        Command::Launch => cmd_launch()?,
     }
 
     Ok(())
@@ -124,6 +126,13 @@ fn cmd_update() -> Result<()> {
             );
         }
     }
+    Ok(())
+}
+
+fn cmd_launch() -> Result<()> {
+    let path = launch::ensure_installed(update::fetch_latest_tag)?;
+    launch::spawn(&path)?;
+    println!("{} cvm-ui launched", "✓".green());
     Ok(())
 }
 

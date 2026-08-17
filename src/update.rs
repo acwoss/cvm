@@ -59,7 +59,7 @@ fn asset_name(target: &str) -> String {
 /// Latest release tag (e.g. `"v0.2.0"`) from the GitHub API, fetched via
 /// `curl` and parsed with `serde_json` (both already dependencies/tools we
 /// need elsewhere, so no HTTP client crate is added just for this).
-fn fetch_latest_tag() -> Result<String> {
+pub(crate) fn fetch_latest_tag() -> Result<String> {
     let url = format!("https://api.github.com/repos/{REPO}/releases/latest");
     let output = Command::new("curl")
         .args(["-fsSL", "-H", "User-Agent: cvm-updater"])

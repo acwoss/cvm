@@ -143,6 +143,9 @@ pub enum Command {
     /// Resolve the env vars to unset in order to deactivate (used by shell hooks)
     #[command(name = "__resolve-deactivate", hide = true)]
     ResolveDeactivate,
+
+    /// Open the cvm desktop UI, downloading it first if not already installed
+    Launch,
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
