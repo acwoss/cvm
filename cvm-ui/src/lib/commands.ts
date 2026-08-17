@@ -121,3 +121,27 @@ export function writeEnvVar(
 export function removeEnvVar(name: string, source: EnvVarSource, key: string): Promise<void> {
   return invoke("remove_env_var", { name, source, key });
 }
+
+export function addMarketplace(name: string, source: string): Promise<string> {
+  return invoke("add_marketplace", { name, source });
+}
+
+export function removeMarketplace(name: string, marketplace: string): Promise<string> {
+  return invoke("remove_marketplace", { name, marketplace });
+}
+
+export function installPlugin(name: string, plugin: string): Promise<string> {
+  return invoke("install_plugin", { name, plugin });
+}
+
+export function uninstallPlugin(name: string, plugin: string): Promise<string> {
+  return invoke("uninstall_plugin", { name, plugin });
+}
+
+export function enablePlugin(name: string, plugin: string): Promise<string> {
+  return invoke("enable_plugin", { name, plugin });
+}
+
+export function disablePlugin(name: string, plugin: string): Promise<string> {
+  return invoke("disable_plugin", { name, plugin });
+}
