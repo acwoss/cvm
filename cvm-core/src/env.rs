@@ -496,13 +496,9 @@ pub fn edit_env(name: &str) -> Result<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
-
-    /// Serializes tests that temporarily override cvm's home directory.
-    static HOME_LOCK: Mutex<()> = Mutex::new(());
 
     fn with_temp_home<F: FnOnce(&Path)>(f: F) {
-        let _guard = HOME_LOCK.lock().unwrap();
+        let _guard = crate::test_support::HOME_LOCK.lock().unwrap();
         let home = tempfile::tempdir().unwrap();
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let prev = env::var(key).ok();

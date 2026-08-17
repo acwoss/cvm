@@ -87,12 +87,9 @@ mod tests {
     use super::*;
     use std::env as std_env;
     use std::fs;
-    use std::sync::Mutex;
-
-    static HOME_LOCK: Mutex<()> = Mutex::new(());
 
     fn with_temp_home<F: FnOnce(&std::path::Path)>(f: F) {
-        let _guard = HOME_LOCK.lock().unwrap();
+        let _guard = crate::test_support::HOME_LOCK.lock().unwrap();
         let home = tempfile::tempdir().unwrap();
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         // SAFETY: guardado por HOME_LOCK, sem outro teste lendo paths de home ao mesmo tempo.
