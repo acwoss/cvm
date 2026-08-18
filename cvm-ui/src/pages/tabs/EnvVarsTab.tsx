@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { SpinnerIcon } from "../../components/Icons";
 import type { EnvVarSource, EnvVarSummary } from "../../lib/commands";
 import { commandErrorMessage, removeEnvVar, revealEnvVar, writeEnvVar } from "../../lib/commands";
 
@@ -184,6 +185,16 @@ export function EnvVarsTab({ envName, envVars }: Props) {
         <ul className="divide-y divide-neutral-800 rounded border border-neutral-800 text-sm">
           {envVars.map((v) => {
             const id = `${v.source}:${v.key}`;
+            const isRevealing =
+              revealMutation.isPending &&
+              revealMutation.variables?.source === v.source &&
+              revealMutation.variables?.key === v.key;
+            const isRemoving =
+              removeMutation.isPending &&
+              removeMutation.variables?.source === v.source &&
+              removeMutation.variables?.key === v.key;
+            const isEditingRow =
+              loadingEdit && editing?.source === v.source && editing?.key === v.key;
             return (
               <li key={id} className="flex items-center justify-between px-4 py-3">
                 <div>
@@ -197,21 +208,27 @@ export function EnvVarsTab({ envName, envVars }: Props) {
                   {revealed[id] === undefined && (
                     <button
                       onClick={() => reveal(v.source, v.key)}
-                      className="text-xs text-neutral-400 underline hover:text-neutral-200"
+                      disabled={isRevealing}
+                      className="flex items-center gap-1.5 text-xs text-neutral-400 underline hover:text-neutral-200 disabled:opacity-50"
                     >
+                      {isRevealing && <SpinnerIcon size={11} />}
                       reveal
                     </button>
                   )}
                   <button
                     onClick={() => openEditForm(v)}
-                    className="text-xs text-neutral-400 underline hover:text-neutral-200"
+                    disabled={isEditingRow}
+                    className="flex items-center gap-1.5 text-xs text-neutral-400 underline hover:text-neutral-200 disabled:opacity-50"
                   >
+                    {isEditingRow && <SpinnerIcon size={11} />}
                     edit
                   </button>
                   <button
                     onClick={() => handleRemove(v)}
-                    className="text-xs text-red-400 underline hover:text-red-300"
+                    disabled={isRemoving}
+                    className="flex items-center gap-1.5 text-xs text-red-400 underline hover:text-red-300 disabled:opacity-50"
                   >
+                    {isRemoving && <SpinnerIcon size={11} />}
                     remove
                   </button>
                 </div>

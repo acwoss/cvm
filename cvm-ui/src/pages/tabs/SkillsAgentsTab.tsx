@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { BotIcon, FileCodeIcon, TrashIcon, ZapIcon } from "../../components/Icons";
+import { BotIcon, FileCodeIcon, SpinnerIcon, TrashIcon, ZapIcon } from "../../components/Icons";
 import type { SkillOrAgentInfo } from "../../lib/commands";
 import {
   commandErrorMessage,
@@ -71,7 +71,12 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
     }
     return (
       <div className="flex flex-col gap-2">
-        {combined.map(({ kind, item }) => (
+        {combined.map(({ kind, item }) => {
+          const isDeleting =
+            deleteMutation.isPending &&
+            deleteMutation.variables?.kind === kind &&
+            deleteMutation.variables?.id === item.id;
+          return (
           <div
             key={`${kind}-${item.id}`}
             className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
@@ -112,14 +117,16 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
                 </button>
                 <button
                   onClick={() => handleDelete(kind, item.id)}
-                  className="text-neutral-600 hover:text-red-400"
+                  disabled={isDeleting}
+                  className="text-neutral-600 hover:text-red-400 disabled:opacity-50"
                 >
-                  <TrashIcon />
+                  {isDeleting ? <SpinnerIcon size={13} /> : <TrashIcon />}
                 </button>
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     );
   }

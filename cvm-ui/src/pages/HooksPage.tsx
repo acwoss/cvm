@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { HookEditor } from "../components/HookEditor";
-import { TrashIcon } from "../components/Icons";
+import { SpinnerIcon, TrashIcon } from "../components/Icons";
 import { commandErrorMessage, deleteHook, listHooks, setHookEnabled } from "../lib/commands";
 
 const FILTERS = [
@@ -97,7 +97,11 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
               ))}
             </div>
             <div className="flex flex-col gap-1">
-              {filtered.map((hook) => (
+              {filtered.map((hook) => {
+                const isToggling =
+                  toggleMutation.isPending && toggleMutation.variables?.event === hook.event;
+                const isDeleting = deleteMutation.isPending && deleteMutation.variables === hook.event;
+                return (
                 <div
                   key={hook.event}
                   onClick={() => setEditingEvent(hook.event)}
@@ -126,17 +130,21 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
                         e.stopPropagation();
                         toggleMutation.mutate({ event: hook.event, enabled: !hook.enabled });
                       }}
-                      disabled={toggleMutation.isPending}
-                      className="relative h-[18px] w-8 flex-shrink-0 rounded-full transition-colors disabled:opacity-50"
+                      disabled={isToggling}
+                      className="relative flex h-[18px] w-8 flex-shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-60"
                       style={{ background: hook.enabled ? "rgba(0,229,255,0.18)" : "#282B33" }}
                     >
-                      <span
-                        className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
-                        style={{
-                          left: hook.enabled ? 15 : 2,
-                          background: hook.enabled ? "#00E5FF" : "#555B68",
-                        }}
-                      />
+                      {isToggling ? (
+                        <SpinnerIcon size={11} />
+                      ) : (
+                        <span
+                          className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
+                          style={{
+                            left: hook.enabled ? 15 : 2,
+                            background: hook.enabled ? "#00E5FF" : "#555B68",
+                          }}
+                        />
+                      )}
                     </button>
                   ) : (
                     <span />
@@ -147,16 +155,17 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
                         e.stopPropagation();
                         handleDelete(hook.event);
                       }}
-                      disabled={deleteMutation.isPending}
+                      disabled={isDeleting}
                       className="justify-self-end text-neutral-600 hover:text-red-400 disabled:opacity-50"
                     >
-                      <TrashIcon />
+                      {isDeleting ? <SpinnerIcon size={13} /> : <TrashIcon />}
                     </button>
                   ) : (
                     <span />
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

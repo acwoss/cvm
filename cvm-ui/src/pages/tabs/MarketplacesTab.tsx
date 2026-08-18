@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { TrashIcon } from "../../components/Icons";
+import { SearchIcon, SpinnerIcon, TrashIcon } from "../../components/Icons";
 import type { MarketplaceInfo, PluginInfo } from "../../lib/commands";
 import {
   addMarketplace,
@@ -24,6 +24,7 @@ function pluginId(marketplaceId: string, plugin: PluginInfo): string {
 export function MarketplacesTab({ envName, marketplaces }: Props) {
   const queryClient = useQueryClient();
   const [newSource, setNewSource] = useState("");
+  const [search, setSearch] = useState("");
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["environment-detail", envName] });
@@ -68,6 +69,13 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
     }
   }
 
+  const query = search.trim().toLowerCase();
+  const filteredMarketplaces = query
+    ? marketplaces
+        .map((m) => ({ ...m, plugins: m.plugins.filter((p) => p.name.toLowerCase().includes(query)) }))
+        .filter((m) => m.plugins.length > 0)
+    : marketplaces;
+
   return (
     <div className="space-y-6 p-6 text-sm">
       <section className="rounded border border-neutral-800 bg-neutral-900 p-4">
@@ -94,10 +102,26 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
         )}
       </section>
 
+      {marketplaces.length > 0 && (
+        <div className="relative max-w-sm">
+          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-600">
+            <SearchIcon />
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search MCP servers…"
+            className="w-full rounded border border-neutral-800 bg-neutral-900 py-1.5 pl-8 pr-3 text-xs text-neutral-100 outline-none focus:border-neutral-600"
+          />
+        </div>
+      )}
+
       {marketplaces.length === 0 ? (
         <p className="text-neutral-400">No marketplaces installed.</p>
+      ) : filteredMarketplaces.length === 0 ? (
+        <p className="text-neutral-400">No MCP servers match your search.</p>
       ) : (
-        marketplaces.map((m) => (
+        filteredMarketplaces.map((m) => (
           <section key={m.id}>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="font-mono text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -105,8 +129,12 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
               </h3>
               <button
                 onClick={() => handleRemoveMarketplace(m.id)}
-                className="text-xs text-red-400 underline hover:text-red-300"
+                disabled={removeMarketplaceMutation.isPending && removeMarketplaceMutation.variables === m.id}
+                className="flex items-center gap-1.5 text-xs text-red-400 underline hover:text-red-300 disabled:opacity-50"
               >
+                {removeMarketplaceMutation.isPending && removeMarketplaceMutation.variables === m.id && (
+                  <SpinnerIcon size={11} />
+                )}
                 remove marketplace
               </button>
             </div>
@@ -146,30 +174,50 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
                               onClick={() =>
                                 p.enabled ? disableMutation.mutate(id) : enableMutation.mutate(id)
                               }
-                              className="relative h-[18px] w-8 rounded-full transition-colors"
+                              disabled={
+                                (enableMutation.isPending && enableMutation.variables === id) ||
+                                (disableMutation.isPending && disableMutation.variables === id)
+                              }
+                              className="relative flex h-[18px] w-8 items-center justify-center rounded-full transition-colors disabled:opacity-60"
                               style={{ background: p.enabled ? "rgba(0,229,255,0.18)" : "#282B33" }}
                             >
-                              <span
-                                className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
-                                style={{
-                                  left: p.enabled ? 15 : 2,
-                                  background: p.enabled ? "#00E5FF" : "#555B68",
-                                }}
-                              />
+                              {(enableMutation.isPending && enableMutation.variables === id) ||
+                              (disableMutation.isPending && disableMutation.variables === id) ? (
+                                <SpinnerIcon size={11} />
+                              ) : (
+                                <span
+                                  className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
+                                  style={{
+                                    left: p.enabled ? 15 : 2,
+                                    background: p.enabled ? "#00E5FF" : "#555B68",
+                                  }}
+                                />
+                              )}
                             </button>
                             <button
                               onClick={() => uninstallMutation.mutate(id)}
-                              className="text-neutral-600 hover:text-red-400"
+                              disabled={uninstallMutation.isPending && uninstallMutation.variables === id}
+                              className="text-neutral-600 hover:text-red-400 disabled:opacity-50"
                             >
-                              <TrashIcon />
+                              {uninstallMutation.isPending && uninstallMutation.variables === id ? (
+                                <SpinnerIcon size={13} />
+                              ) : (
+                                <TrashIcon />
+                              )}
                             </button>
                           </>
                         ) : (
                           <button
                             onClick={() => installMutation.mutate(id)}
-                            className="rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+                            disabled={installMutation.isPending && installMutation.variables === id}
+                            className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100 disabled:opacity-50"
                           >
-                            install
+                            {installMutation.isPending && installMutation.variables === id && (
+                              <SpinnerIcon size={11} />
+                            )}
+                            {installMutation.isPending && installMutation.variables === id
+                              ? "installing…"
+                              : "install"}
                           </button>
                         )}
                       </div>

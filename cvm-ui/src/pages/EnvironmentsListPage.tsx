@@ -14,18 +14,12 @@ export function EnvironmentsListPage({ onSelect }: Props) {
     queryFn: listEnvironments,
   });
 
-  const activeCount = data?.filter((env) => env.active).length ?? 0;
   const filtered = data?.filter((env) => env.name.toLowerCase().includes(search.toLowerCase())) ?? [];
 
   return (
     <div className="p-7">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-bold tracking-tight text-neutral-100">Environments</h1>
-        {data && data.length > 0 && (
-          <p className="text-xs text-neutral-500">
-            <span className="font-semibold text-orange-400">{activeCount}</span> of {data.length} active
-          </p>
-        )}
       </div>
 
       <div className="mb-5 flex items-center gap-2">

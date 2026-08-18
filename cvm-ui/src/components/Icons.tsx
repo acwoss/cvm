@@ -118,6 +118,15 @@ export function CloudIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function SpinnerIcon({ size = 13 }: IconProps) {
+  return (
+    <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M12 2a10 10 0 0110 10" opacity="0.9" />
+      <path d="M12 2a10 10 0 00-10 10 10 10 0 0010 10 10 10 0 0010-10" opacity="0.25" />
+    </svg>
+  );
+}
+
 export function LogoMark({ size = 22 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
