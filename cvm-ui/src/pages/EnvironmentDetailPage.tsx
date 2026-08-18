@@ -36,7 +36,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
     );
   }
 
-  const pluginCount = data?.marketplaces.flatMap((m) => m.plugins).length ?? 0;
+  const pluginCount = data?.marketplaces.flatMap((m) => m.plugins).filter((p) => p.installed).length ?? 0;
   const skillsAgentsCount = (data?.skills.length ?? 0) + (data?.agents.length ?? 0);
   const envVarsCount = data?.envVars.length ?? 0;
 
