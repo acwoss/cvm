@@ -56,27 +56,17 @@ export function EnvironmentsListPage({ onSelect }: Props) {
           {filtered.map((env) => (
             <div
               key={env.name}
-              className={`rounded-lg border-l-2 border-y border-r border-y-neutral-800 border-r-neutral-800 bg-neutral-900/60 p-4 ${
-                env.active ? "border-l-orange-500" : "border-l-neutral-700"
-              }`}
+              onClick={() => onSelect(env.name)}
+              className="cursor-pointer rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 transition-colors hover:border-orange-500/60 hover:bg-orange-500/10"
             >
-              <div className="mb-2 flex items-center gap-1.5">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${env.active ? "bg-emerald-400" : "bg-neutral-600"}`}
-                />
-                <span
-                  className={`font-mono text-[10px] font-semibold tracking-wide ${
-                    env.active ? "text-emerald-400" : "text-neutral-500"
-                  }`}
-                >
-                  {env.active ? "ACTIVE" : "INACTIVE"}
-                </span>
-              </div>
               <p className="mb-0.5 text-sm font-semibold text-neutral-100">{env.name}</p>
               <p className="mb-3 truncate font-mono text-xs text-neutral-500">{env.path}</p>
               <div className="flex justify-end">
                 <button
-                  onClick={() => onSelect(env.name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(env.name);
+                  }}
                   className="rounded border border-orange-500/40 px-3 py-1 text-xs font-medium text-orange-400 hover:bg-orange-500/10"
                 >
                   Open
