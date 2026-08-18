@@ -78,9 +78,10 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
             deleteMutation.isPending &&
             deleteMutation.variables?.kind === kind &&
             deleteMutation.variables?.id === item.id;
+          const originKey = item.source.kind === "native" ? "native" : `${item.source.marketplace}/${item.source.plugin}`;
           return (
           <div
-            key={`${kind}-${item.id}`}
+            key={`${kind}-${originKey}-${item.id}`}
             className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
           >
             <div className="flex min-w-0 items-center gap-3">

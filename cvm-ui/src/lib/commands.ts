@@ -43,7 +43,7 @@ export interface McpServerInfo {
   name: string;
   command: string;
   args: string[];
-  env: Record<string, string> | null;
+  envKeys: string[];
   source: ItemSource;
 }
 

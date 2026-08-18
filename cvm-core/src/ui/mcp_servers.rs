@@ -16,9 +16,16 @@ pub struct McpServerInfo {
     pub command: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub env: Option<BTreeMap<String, String>>,
+    /// Apenas os *nomes* das variáveis de ambiente do server - nunca os
+    /// valores, que podem conter segredos (tokens, chaves de API). Mesmo
+    /// tratamento de `EnvVarSummary` em `config.rs`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub env_keys: Vec<String>,
     pub source: ItemSource,
+}
+
+fn env_keys(env: Option<BTreeMap<String, String>>) -> Vec<String> {
+    env.map(|vars| vars.into_keys().collect()).unwrap_or_default()
 }
 
 fn read_native_mcp_servers(env_dir: &Path) -> Result<BTreeMap<String, McpServer>> {
@@ -42,7 +49,7 @@ pub fn list_mcp_servers(env_dir: &Path) -> Result<Vec<McpServerInfo>> {
             name,
             command: server.command,
             args: server.args,
-            env: server.env,
+            env_keys: env_keys(server.env),
             source: ItemSource::Native,
         });
     }
@@ -60,7 +67,7 @@ pub fn list_mcp_servers(env_dir: &Path) -> Result<Vec<McpServerInfo>> {
                 name,
                 command: server.command,
                 args: server.args,
-                env: server.env,
+                env_keys: env_keys(server.env),
                 source: ItemSource::Plugin {
                     marketplace: plugin_dir.marketplace.clone(),
                     plugin: plugin_dir.plugin.clone(),
@@ -158,5 +165,22 @@ mod tests {
     fn returns_empty_list_when_settings_json_missing() {
         let dir = tempfile::tempdir().unwrap();
         assert_eq!(list_mcp_servers(dir.path()).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn exposes_env_var_names_but_never_their_values() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("settings.json"),
+            r#"{"mcpServers":{"api":{"command":"npx","env":{"API_KEY":"sk-live-secret"}}}}"#,
+        )
+        .unwrap();
+
+        let servers = list_mcp_servers(dir.path()).unwrap();
+        let serialized = serde_json::to_string(&servers).unwrap();
+
+        assert_eq!(servers[0].env_keys, vec!["API_KEY".to_string()]);
+        assert!(!serialized.contains("sk-live-secret"));
+        assert!(serialized.contains("API_KEY"));
     }
 }

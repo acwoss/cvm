@@ -11,6 +11,10 @@ function originLabel(server: McpServerInfo): string {
   return server.source.kind === "native" ? "native" : server.source.plugin;
 }
 
+function originKey(source: McpServerInfo["source"]): string {
+  return source.kind === "native" ? "native" : `${source.marketplace}/${source.plugin}`;
+}
+
 export function McpServersTab({ mcpServers }: Props) {
   const [search, setSearch] = useState("");
   const [showPlugins, setShowPlugins] = useState(true);
@@ -51,7 +55,7 @@ export function McpServersTab({ mcpServers }: Props) {
         <div className="flex flex-col gap-2">
           {visible.map((server) => (
             <div
-              key={`${originLabel(server)}-${server.name}`}
+              key={`${originKey(server.source)}-${server.name}`}
               className="rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
             >
               <div className="flex items-center justify-between gap-3">
@@ -70,10 +74,8 @@ export function McpServersTab({ mcpServers }: Props) {
               <p className="mt-1 truncate font-mono text-xs text-neutral-500">
                 {server.command} {server.args.join(" ")}
               </p>
-              {server.env && Object.keys(server.env).length > 0 && (
-                <p className="mt-1 font-mono text-[10px] text-neutral-600">
-                  env: {Object.keys(server.env).join(", ")}
-                </p>
+              {server.envKeys.length > 0 && (
+                <p className="mt-1 font-mono text-[10px] text-neutral-600">env: {server.envKeys.join(", ")}</p>
               )}
             </div>
           ))}
