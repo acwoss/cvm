@@ -8,7 +8,7 @@ interface Props {
 }
 
 function authMethodLabel(account: AccountInfo): string {
-  return account.authMethod === "oauth" ? "Conta Anthropic (OAuth)" : "Autenticado via API key";
+  return account.authMethod === "oauth" ? "Anthropic Account (OAuth)" : "Authenticated via API key";
 }
 
 export function AccountTab({ envName, account }: Props) {
@@ -19,27 +19,27 @@ export function AccountTab({ envName, account }: Props) {
   return (
     <div className="space-y-6 p-7 text-sm">
       {!account ? (
-        <p className="text-neutral-400">Ambiente anônimo (sem conta autenticada).</p>
+        <p className="text-neutral-400">Anonymous environment (no authenticated account).</p>
       ) : (
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-          <dt className="text-neutral-500">Autenticação</dt>
+          <dt className="text-neutral-500">Authentication</dt>
           <dd className="text-neutral-200">{authMethodLabel(account)}</dd>
           {account.authMethod === "oauth" && (
             <>
               <dt className="text-neutral-500">Email</dt>
               <dd className="text-neutral-200">{account.email ?? "—"}</dd>
-              <dt className="text-neutral-500">Nome</dt>
+              <dt className="text-neutral-500">Name</dt>
               <dd className="text-neutral-200">{account.displayName ?? "—"}</dd>
-              <dt className="text-neutral-500">Organização</dt>
+              <dt className="text-neutral-500">Organization</dt>
               <dd className="text-neutral-200">{account.organizationName ?? "—"}</dd>
-              <dt className="text-neutral-500">Plano</dt>
+              <dt className="text-neutral-500">Plan</dt>
               <dd className="text-neutral-200">{account.seatTier ?? "—"}</dd>
             </>
           )}
           {account.authMethod === "apiKey" && (
             <>
-              <dt className="text-neutral-500">Origem</dt>
-              <dd className="text-neutral-200">Variável de ambiente ANTHROPIC_API_KEY</dd>
+              <dt className="text-neutral-500">Source</dt>
+              <dd className="text-neutral-200">ANTHROPIC_API_KEY environment variable</dd>
             </>
           )}
         </dl>
@@ -51,12 +51,12 @@ export function AccountTab({ envName, account }: Props) {
           disabled={statusMutation.isPending}
           className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100 disabled:opacity-50"
         >
-          {statusMutation.isPending ? "Verificando…" : "Verificar status"}
+          {statusMutation.isPending ? "Checking…" : "Check status"}
         </button>
 
         {statusMutation.error && (
           <p className="mt-2 text-xs text-red-400">
-            Erro: {commandErrorMessage(statusMutation.error)}
+            Error: {commandErrorMessage(statusMutation.error)}
           </p>
         )}
 

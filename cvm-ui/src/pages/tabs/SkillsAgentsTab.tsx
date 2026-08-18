@@ -55,7 +55,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
   });
 
   function handleDelete(kind: Kind, id: string) {
-    if (window.confirm(`Remover ${kind === "skill" ? "a skill" : "o agent"} '${id}'? Isso não pode ser desfeito.`)) {
+    if (window.confirm(`Remove ${kind === "skill" ? "the skill" : "the agent"} '${id}'? This cannot be undone.`)) {
       deleteMutation.mutate({ kind, id });
     }
   }
@@ -67,7 +67,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
 
   function renderList() {
     if (combined.length === 0) {
-      return <p className="text-sm text-neutral-500">Nenhuma.</p>;
+      return <p className="text-sm text-neutral-500">None.</p>;
     }
     return (
       <div className="flex flex-col gap-2">
@@ -93,7 +93,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
                   {item.builtIn && (
                     <span
                       className="rounded border border-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-600"
-                      title="Herdado do ambiente global — edite pelo ambiente de origem"
+                      title="Inherited from the global environment — edit it from the source environment"
                     >
                       built-in
                     </span>
@@ -108,7 +108,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
                   onClick={() => onEdit(kind, item.id)}
                   className="flex items-center gap-1 rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
                 >
-                  <FileCodeIcon /> Editar
+                  <FileCodeIcon /> Edit
                 </button>
                 <button
                   onClick={() => handleDelete(kind, item.id)}
@@ -134,7 +134,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
           onClick={() => setShowNew(true)}
           className="rounded border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20"
         >
-          + Nova skill/agent
+          + New skill/agent
         </button>
       </div>
 
@@ -142,16 +142,16 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
         <div className="rounded border border-neutral-700 bg-neutral-900 p-4 text-sm">
           <div className="mb-3 grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-neutral-500">Nome</label>
+              <label className="mb-1 block text-xs text-neutral-500">Name</label>
               <input
                 value={newId}
                 onChange={(e) => setNewId(e.target.value)}
-                placeholder="minha-skill"
+                placeholder="my-skill"
                 className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-100 outline-none focus:border-neutral-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-neutral-500">Tipo</label>
+              <label className="mb-1 block text-xs text-neutral-500">Type</label>
               <div className="flex gap-2">
                 {(["skill", "agent"] as const).map((k) => (
                   <button
@@ -170,37 +170,37 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
             </div>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-xs text-neutral-500">Descrição</label>
+            <label className="mb-1 block text-xs text-neutral-500">Description</label>
             <input
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="O que isso faz?"
+              placeholder="What does this do?"
               className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-100 outline-none focus:border-neutral-500"
             />
           </div>
           {createMutation.error && (
-            <p className="mb-2 text-xs text-red-400">Erro: {commandErrorMessage(createMutation.error)}</p>
+            <p className="mb-2 text-xs text-red-400">Error: {commandErrorMessage(createMutation.error)}</p>
           )}
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setShowNew(false)}
               className="rounded px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-200"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               onClick={() => createMutation.mutate()}
               disabled={newId.trim().length === 0 || createMutation.isPending}
               className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
             >
-              {createMutation.isPending ? "Criando…" : "Criar e editar"}
+              {createMutation.isPending ? "Creating…" : "Create and edit"}
             </button>
           </div>
         </div>
       )}
 
       {deleteMutation.error && (
-        <p className="text-xs text-red-400">Erro ao remover: {commandErrorMessage(deleteMutation.error)}</p>
+        <p className="text-xs text-red-400">Error removing: {commandErrorMessage(deleteMutation.error)}</p>
       )}
 
       {renderList()}

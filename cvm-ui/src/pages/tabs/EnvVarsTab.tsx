@@ -79,7 +79,7 @@ export function EnvVarsTab({ envName, envVars }: Props) {
   }
 
   function handleRemove(v: EnvVarSummary) {
-    if (window.confirm(`Remover a variável '${v.key}'? Isso não pode ser desfeito.`)) {
+    if (window.confirm(`Remove the variable '${v.key}'? This cannot be undone.`)) {
       removeMutation.mutate({ source: v.source, key: v.key });
     }
   }
@@ -96,27 +96,26 @@ export function EnvVarsTab({ envName, envVars }: Props) {
   return (
     <div className="p-6">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-neutral-200">Variáveis de ambiente</h3>
+        <h3 className="text-sm font-medium text-neutral-200">Environment variables</h3>
         <button
           onClick={openAddForm}
           className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white"
         >
-          + Adicionar variável
+          + Add variable
         </button>
       </div>
 
       <p className="mb-4 rounded border border-amber-900/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-400">
-        Estas variáveis são carregadas no processo do Claude Code, mas um MCP server só recebe uma
-        delas se ela estiver referenciada explicitamente no bloco <code>env</code> da configuração
-        desse servidor (aba MCP Servers). Definir a variável aqui não garante que um MCP server a
-        receba.
+        These variables are loaded into the Claude Code process, but an MCP server only receives one
+        of them if it's explicitly referenced in that server's <code>env</code> config block (MCP
+        Servers tab). Setting the variable here does not guarantee an MCP server will receive it.
       </p>
 
       {showForm && (
         <div className="mb-4 rounded border border-neutral-700 bg-neutral-900 p-4">
           <div className="mb-3 grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-neutral-500">Chave</label>
+              <label className="mb-1 block text-xs text-neutral-500">Key</label>
               <input
                 value={formKey}
                 onChange={(e) => setFormKey(e.target.value)}
@@ -125,18 +124,18 @@ export function EnvVarsTab({ envName, envVars }: Props) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-neutral-500">Valor</label>
+              <label className="mb-1 block text-xs text-neutral-500">Value</label>
               <input
                 value={formValue}
                 onChange={(e) => setFormValue(e.target.value)}
                 disabled={loadingEdit}
-                placeholder={loadingEdit ? "Carregando valor atual…" : undefined}
+                placeholder={loadingEdit ? "Loading current value…" : undefined}
                 className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-100 outline-none focus:border-neutral-500 disabled:opacity-50"
               />
             </div>
           </div>
           <div className="mb-3 flex items-center gap-2 text-xs text-neutral-400">
-            <span>Origem:</span>
+            <span>Source:</span>
             <select
               value={formSource}
               onChange={(e) => setFormSource(e.target.value as EnvVarSource)}
@@ -148,21 +147,21 @@ export function EnvVarsTab({ envName, envVars }: Props) {
             </select>
           </div>
           {saveMutation.error && (
-            <p className="mb-2 text-xs text-red-400">Erro: {commandErrorMessage(saveMutation.error)}</p>
+            <p className="mb-2 text-xs text-red-400">Error: {commandErrorMessage(saveMutation.error)}</p>
           )}
           <div className="flex justify-end gap-2">
             <button
               onClick={closeForm}
               className="rounded px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-200"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               onClick={() => saveMutation.mutate()}
               disabled={formKey.trim().length === 0 || saveMutation.isPending || loadingEdit}
               className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
             >
-              {saveMutation.isPending ? "Salvando…" : "Salvar"}
+              {saveMutation.isPending ? "Saving…" : "Save"}
             </button>
           </div>
         </div>
@@ -170,17 +169,17 @@ export function EnvVarsTab({ envName, envVars }: Props) {
 
       {revealMutation.error && (
         <p className="mb-2 text-xs text-red-400">
-          Erro ao revelar: {commandErrorMessage(revealMutation.error)}
+          Error revealing: {commandErrorMessage(revealMutation.error)}
         </p>
       )}
       {removeMutation.error && (
         <p className="mb-2 text-xs text-red-400">
-          Erro ao remover: {commandErrorMessage(removeMutation.error)}
+          Error removing: {commandErrorMessage(removeMutation.error)}
         </p>
       )}
 
       {envVars.length === 0 ? (
-        <p className="text-sm text-neutral-400">Nenhuma variável de ambiente.</p>
+        <p className="text-sm text-neutral-400">No environment variables.</p>
       ) : (
         <ul className="divide-y divide-neutral-800 rounded border border-neutral-800 text-sm">
           {envVars.map((v) => {
@@ -200,20 +199,20 @@ export function EnvVarsTab({ envName, envVars }: Props) {
                       onClick={() => reveal(v.source, v.key)}
                       className="text-xs text-neutral-400 underline hover:text-neutral-200"
                     >
-                      revelar
+                      reveal
                     </button>
                   )}
                   <button
                     onClick={() => openEditForm(v)}
                     className="text-xs text-neutral-400 underline hover:text-neutral-200"
                   >
-                    editar
+                    edit
                   </button>
                   <button
                     onClick={() => handleRemove(v)}
                     className="text-xs text-red-400 underline hover:text-red-300"
                   >
-                    remover
+                    remove
                   </button>
                 </div>
               </li>

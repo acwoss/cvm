@@ -41,7 +41,7 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
   });
 
   function handleRemove() {
-    if (window.confirm(`Remover o ambiente '${envName}'? Isso não pode ser desfeito.`)) {
+    if (window.confirm(`Remove the environment '${envName}'? This cannot be undone.`)) {
       removeMutation.mutate();
     }
   }
@@ -50,7 +50,7 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
     <div className="space-y-4 p-6 text-sm">
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Allowed tools</h3>
-        <p className="mb-2 text-xs text-neutral-500">Uma ferramenta por linha.</p>
+        <p className="mb-2 text-xs text-neutral-500">One tool per line.</p>
         <textarea
           value={allowedTools}
           onChange={(e) => setAllowedTools(e.target.value)}
@@ -60,7 +60,7 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
       </section>
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Denied tools</h3>
-        <p className="mb-2 text-xs text-neutral-500">Uma ferramenta por linha.</p>
+        <p className="mb-2 text-xs text-neutral-500">One tool per line.</p>
         <textarea
           value={deniedTools}
           onChange={(e) => setDeniedTools(e.target.value)}
@@ -74,33 +74,33 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
           disabled={saveMutation.isPending}
           className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
         >
-          {saveMutation.isPending ? "Salvando…" : "Salvar"}
+          {saveMutation.isPending ? "Saving…" : "Save"}
         </button>
-        {saveMutation.isSuccess && <span className="text-xs text-emerald-400">Salvo.</span>}
+        {saveMutation.isSuccess && <span className="text-xs text-emerald-400">Saved.</span>}
         {saveMutation.error && (
-          <span className="text-xs text-red-400">Erro: {commandErrorMessage(saveMutation.error)}</span>
+          <span className="text-xs text-red-400">Error: {commandErrorMessage(saveMutation.error)}</span>
         )}
       </div>
       <section>
-        <h3 className="mb-1 font-medium text-neutral-200">Outras chaves (settings.json)</h3>
+        <h3 className="mb-1 font-medium text-neutral-200">Other keys (settings.json)</h3>
         <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-neutral-900 p-3 text-xs text-neutral-400">
           {JSON.stringify(config.other, null, 2)}
         </pre>
       </section>
       <section className="rounded border border-red-900/40 bg-red-950/10 p-4">
-        <h3 className="mb-1 font-medium text-red-400">Zona de risco</h3>
+        <h3 className="mb-1 font-medium text-red-400">Danger zone</h3>
         <p className="mb-3 text-xs text-neutral-500">
-          Remove permanentemente este ambiente e todos os seus dados.
+          Permanently removes this environment and all its data.
         </p>
         <button
           onClick={handleRemove}
           disabled={removeMutation.isPending}
           className="rounded border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-950/50 disabled:opacity-50"
         >
-          {removeMutation.isPending ? "Removendo…" : "Remover ambiente"}
+          {removeMutation.isPending ? "Removing…" : "Remove environment"}
         </button>
         {removeMutation.error && (
-          <p className="mt-2 text-xs text-red-400">Erro: {commandErrorMessage(removeMutation.error)}</p>
+          <p className="mt-2 text-xs text-red-400">Error: {commandErrorMessage(removeMutation.error)}</p>
         )}
       </section>
     </div>

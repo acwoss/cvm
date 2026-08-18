@@ -63,7 +63,7 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
   });
 
   function handleRemoveMarketplace(id: string) {
-    if (window.confirm(`Remover o marketplace '${id}'? Isso não pode ser desfeito.`)) {
+    if (window.confirm(`Remove the marketplace '${id}'? This cannot be undone.`)) {
       removeMarketplaceMutation.mutate(id);
     }
   }
@@ -71,12 +71,12 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
   return (
     <div className="space-y-6 p-6 text-sm">
       <section className="rounded border border-neutral-800 bg-neutral-900 p-4">
-        <h3 className="mb-2 font-medium text-neutral-200">Adicionar marketplace</h3>
+        <h3 className="mb-2 font-medium text-neutral-200">Add marketplace</h3>
         <div className="flex gap-2">
           <input
             value={newSource}
             onChange={(e) => setNewSource(e.target.value)}
-            placeholder="URL, caminho ou repositório do GitHub"
+            placeholder="URL, path, or GitHub repository"
             className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-xs text-neutral-100 outline-none focus:border-neutral-500"
           />
           <button
@@ -84,18 +84,18 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
             disabled={newSource.trim().length === 0 || addMarketplaceMutation.isPending}
             className="rounded bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-white disabled:opacity-50"
           >
-            {addMarketplaceMutation.isPending ? "Adicionando…" : "Adicionar"}
+            {addMarketplaceMutation.isPending ? "Adding…" : "Add"}
           </button>
         </div>
         {addMarketplaceMutation.error && (
           <p className="mt-2 text-xs text-red-400">
-            Erro: {commandErrorMessage(addMarketplaceMutation.error)}
+            Error: {commandErrorMessage(addMarketplaceMutation.error)}
           </p>
         )}
       </section>
 
       {marketplaces.length === 0 ? (
-        <p className="text-neutral-400">Nenhum marketplace instalado.</p>
+        <p className="text-neutral-400">No marketplaces installed.</p>
       ) : (
         marketplaces.map((m) => (
           <section key={m.id}>
@@ -107,12 +107,12 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
                 onClick={() => handleRemoveMarketplace(m.id)}
                 className="text-xs text-red-400 underline hover:text-red-300"
               >
-                remover marketplace
+                remove marketplace
               </button>
             </div>
             {removeMarketplaceMutation.error && removeMarketplaceMutation.variables === m.id && (
               <p className="mb-2 text-xs text-red-400">
-                Erro: {commandErrorMessage(removeMarketplaceMutation.error)}
+                Error: {commandErrorMessage(removeMarketplaceMutation.error)}
               </p>
             )}
             <div className="flex flex-col gap-2">
@@ -169,26 +169,26 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
                             onClick={() => installMutation.mutate(id)}
                             className="rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
                           >
-                            instalar
+                            install
                           </button>
                         )}
                       </div>
                     </div>
                     {p.description && <p className="mt-1 text-xs text-neutral-500">{p.description}</p>}
                     {installMutation.error && installMutation.variables === id && (
-                      <p className="mt-1 text-xs text-red-400">Erro: {commandErrorMessage(installMutation.error)}</p>
+                      <p className="mt-1 text-xs text-red-400">Error: {commandErrorMessage(installMutation.error)}</p>
                     )}
                     {uninstallMutation.error && uninstallMutation.variables === id && (
                       <p className="mt-1 text-xs text-red-400">
-                        Erro: {commandErrorMessage(uninstallMutation.error)}
+                        Error: {commandErrorMessage(uninstallMutation.error)}
                       </p>
                     )}
                     {enableMutation.error && enableMutation.variables === id && (
-                      <p className="mt-1 text-xs text-red-400">Erro: {commandErrorMessage(enableMutation.error)}</p>
+                      <p className="mt-1 text-xs text-red-400">Error: {commandErrorMessage(enableMutation.error)}</p>
                     )}
                     {disableMutation.error && disableMutation.variables === id && (
                       <p className="mt-1 text-xs text-red-400">
-                        Erro: {commandErrorMessage(disableMutation.error)}
+                        Error: {commandErrorMessage(disableMutation.error)}
                       </p>
                     )}
                   </div>
