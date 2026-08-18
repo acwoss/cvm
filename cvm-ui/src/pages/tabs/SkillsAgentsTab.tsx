@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BotIcon, FileCodeIcon, SpinnerIcon, TrashIcon, ZapIcon } from "../../components/Icons";
+import { PluginVisibilityToggle } from "../../components/PluginVisibilityToggle";
 import type { SkillOrAgentInfo } from "../../lib/commands";
 import {
   commandErrorMessage,
@@ -22,6 +23,7 @@ interface Props {
 export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
+  const [showPlugins, setShowPlugins] = useState(true);
   const [newKind, setNewKind] = useState<Kind>("skill");
   const [newId, setNewId] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -63,7 +65,7 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
   const combined = [
     ...skills.map((item) => ({ kind: "skill" as Kind, item })),
     ...agents.map((item) => ({ kind: "agent" as Kind, item })),
-  ];
+  ].filter(({ item }) => showPlugins || item.source.kind === "native");
 
   function renderList() {
     if (combined.length === 0) {
@@ -103,11 +105,19 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
                       built-in
                     </span>
                   )}
+                  {item.source.kind === "plugin" && (
+                    <span
+                      className="rounded border border-neutral-800 px-1.5 py-0.5 font-mono text-[10px] text-neutral-600"
+                      title={`Provided by the plugin '${item.source.plugin}' (${item.source.marketplace})`}
+                    >
+                      plugin: {item.source.plugin}
+                    </span>
+                  )}
                 </div>
                 <p className="truncate text-xs text-neutral-500">{item.description}</p>
               </div>
             </div>
-            {!item.builtIn && (
+            {!item.builtIn && item.source.kind !== "plugin" && (
               <div className="flex flex-shrink-0 items-center gap-3">
                 <button
                   onClick={() => onEdit(kind, item.id)}
@@ -137,12 +147,15 @@ export function SkillsAgentsTab({ envName, skills, agents, onEdit }: Props) {
         <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
           {combined.length} skills & agents
         </h3>
-        <button
-          onClick={() => setShowNew(true)}
-          className="rounded border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20"
-        >
-          + New skill/agent
-        </button>
+        <div className="flex items-center gap-4">
+          <PluginVisibilityToggle checked={showPlugins} onChange={setShowPlugins} />
+          <button
+            onClick={() => setShowNew(true)}
+            className="rounded border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20"
+          >
+            + New skill/agent
+          </button>
+        </div>
       </div>
 
       {showNew && (
