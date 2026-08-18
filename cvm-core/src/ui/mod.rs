@@ -40,6 +40,7 @@ pub struct EnvironmentDetail {
     pub config: ConfigSection,
     pub env_vars: Vec<EnvVarSummary>,
     pub marketplaces: Vec<MarketplaceInfo>,
+    pub mcp_servers: Vec<McpServerInfo>,
     pub skills: Vec<SkillOrAgentInfo>,
     pub agents: Vec<SkillOrAgentInfo>,
     pub account: Option<AccountInfo>,
@@ -64,6 +65,10 @@ pub fn environment_detail(name: &str) -> Result<EnvironmentDetail> {
         warnings.push(format!("marketplaces: {err:#}"));
         Vec::new()
     });
+    let mcp_servers = list_mcp_servers(&dir).unwrap_or_else(|err| {
+        warnings.push(format!("mcp servers: {err:#}"));
+        Vec::new()
+    });
     let skills = list_skills(&dir).unwrap_or_else(|err| {
         warnings.push(format!("skills: {err:#}"));
         Vec::new()
@@ -84,6 +89,7 @@ pub fn environment_detail(name: &str) -> Result<EnvironmentDetail> {
         config,
         env_vars,
         marketplaces,
+        mcp_servers,
         skills,
         agents,
         account,
@@ -146,6 +152,23 @@ mod tests {
                 detail.account.unwrap().email.as_deref(),
                 Some("dev@example.com")
             );
+        });
+    }
+
+    #[test]
+    fn includes_native_mcp_servers_in_environment_detail() {
+        with_temp_home(|_home| {
+            let (dir, _, _) = crate::env::create_env("work", true, false).unwrap();
+            fs::write(
+                dir.join("settings.json"),
+                r#"{"mcpServers":{"postgres":{"command":"npx","args":[]}}}"#,
+            )
+            .unwrap();
+
+            let detail = environment_detail("work").unwrap();
+
+            assert_eq!(detail.mcp_servers.len(), 1);
+            assert_eq!(detail.mcp_servers[0].name, "postgres");
         });
     }
 
