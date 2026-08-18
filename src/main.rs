@@ -76,6 +76,7 @@ fn run() -> Result<()> {
                     .dimmed()
                 );
             }
+            maybe_suggest_update();
             if open {
                 let code = env::open_env(&env_name)?;
                 std::process::exit(code);
@@ -129,6 +130,39 @@ fn cmd_update() -> Result<()> {
     Ok(())
 }
 
+const UPDATE_CHECK_TTL_SECS: u64 = 24 * 60 * 60;
+
+/// Imprime em stderr uma sugestão de update quando há uma versão diferente
+/// da atual disponível, usando o cache de 24h de `cvm_core::update`. Nunca
+/// falha nem escreve em stdout - stdout é o contrato `KEY=VALUE` que os
+/// hooks de shell consomem em `cmd_resolve_activate`.
+fn maybe_suggest_update() {
+    let Ok(home) = cvm_core::env::cvm_home() else {
+        return;
+    };
+    let cache_path = home.join("update-check.json");
+    let current = update::current_version();
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    if let Some(latest) = cvm_core::update::check_for_update(
+        current,
+        &cache_path,
+        UPDATE_CHECK_TTL_SECS,
+        now_secs,
+        || cvm_core::update::fetch_latest_tag("acwoss/cvm", 2),
+    ) {
+        eprintln!(
+            "{} cvm {} is available (current: {}) — run `cvm update`",
+            "info:".dimmed(),
+            latest,
+            current
+        );
+    }
+}
+
 fn cmd_launch() -> Result<()> {
     let path = launch::ensure_installed(update::fetch_latest_tag)?;
     launch::spawn(&path)?;
@@ -176,6 +210,7 @@ fn cmd_activation_hint(env_name: &str) -> Result<()> {
     eprintln!("  cvm init powershell | Out-String | Invoke-Expression   # $PROFILE");
     eprintln!();
     eprintln!("Once active, run: cvm use {env_name}");
+    maybe_suggest_update();
     Ok(())
 }
 
@@ -283,6 +318,7 @@ fn cmd_resolve_activate(env_name: &str) -> Result<()> {
     }
     print!("{out}");
     io::stdout().flush().ok();
+    maybe_suggest_update();
     Ok(())
 }
 
