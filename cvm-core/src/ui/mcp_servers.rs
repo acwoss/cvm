@@ -14,12 +14,10 @@ use crate::ui::plugin_source::ItemSource;
 pub struct McpServerInfo {
     pub name: String,
     pub command: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<String>,
     /// Apenas os *nomes* das variáveis de ambiente do server - nunca os
     /// valores, que podem conter segredos (tokens, chaves de API). Mesmo
     /// tratamento de `EnvVarSummary` em `config.rs`.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub env_keys: Vec<String>,
     pub source: ItemSource,
 }
