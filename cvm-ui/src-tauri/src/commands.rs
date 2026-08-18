@@ -178,6 +178,19 @@ pub fn delete_skill(env_name: String, id: String) -> Result<(), CommandError> {
 }
 
 #[tauri::command]
+pub fn get_claude_md(env_name: String) -> Result<String, CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    Ok(ui::read_claude_md(&dir)?)
+}
+
+#[tauri::command]
+pub fn write_claude_md(env_name: String, content: String) -> Result<(), CommandError> {
+    let dir = env::ensure_env_exists(&env_name)?;
+    ui::write_claude_md(&dir, &content)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn get_agent_content(env_name: String, id: String) -> Result<SkillContent, CommandError> {
     let dir = env::ensure_env_exists(&env_name)?;
     Ok(ui::read_agent_content(&dir, &id)?)

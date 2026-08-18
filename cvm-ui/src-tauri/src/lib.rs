@@ -23,6 +23,8 @@ pub fn run() {
             commands::disable_plugin,
             commands::get_skill_content,
             commands::write_skill_content,
+            commands::get_claude_md,
+            commands::write_claude_md,
             commands::create_skill,
             commands::delete_skill,
             commands::get_agent_content,

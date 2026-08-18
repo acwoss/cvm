@@ -1,4 +1,5 @@
 mod account;
+mod claude_md;
 mod config;
 mod hooks;
 mod marketplaces;
@@ -7,6 +8,7 @@ mod skills;
 mod summary;
 
 pub use account::{AccountInfo, AuthMethod, AuthStatus};
+pub use claude_md::{read_claude_md, write_claude_md};
 pub use config::{
     list_env_var_summaries, read_config_section, remove_env_var, reveal_value,
     write_config_section, write_env_var, ConfigSection, EnvVarSource, EnvVarSummary,

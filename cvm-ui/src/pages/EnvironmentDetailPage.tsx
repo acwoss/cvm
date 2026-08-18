@@ -3,12 +3,13 @@ import { useState } from "react";
 import { commandErrorMessage, getEnvironmentDetail, openInClaude } from "../lib/commands";
 import { SkillEditor } from "../components/SkillEditor";
 import { AccountTab } from "./tabs/AccountTab";
+import { ClaudeMdTab } from "./tabs/ClaudeMdTab";
 import { ConfigTab } from "./tabs/ConfigTab";
 import { EnvVarsTab } from "./tabs/EnvVarsTab";
 import { MarketplacesTab } from "./tabs/MarketplacesTab";
 import { SkillsAgentsTab } from "./tabs/SkillsAgentsTab";
 
-const TABS = ["overview", "marketplaces", "envvars", "skills", "config", "account"] as const;
+const TABS = ["overview", "claudeMd", "marketplaces", "envvars", "skills", "config", "account"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Props {
@@ -42,6 +43,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
 
   const tabLabels: Record<Tab, string> = {
     overview: "Overview",
+    claudeMd: "CLAUDE.md",
     marketplaces: `MCP Servers (${pluginCount})`,
     envvars: `Env Vars (${envVarsCount})`,
     skills: `Skills & Agents (${skillsAgentsCount})`,
@@ -130,6 +132,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
                 </div>
               </div>
             )}
+            {tab === "claudeMd" && <ClaudeMdTab envName={name} />}
             {tab === "config" && <ConfigTab config={data.config} envName={name} onRemoved={onBack} />}
             {tab === "envvars" && <EnvVarsTab envName={name} envVars={data.envVars} />}
             {tab === "marketplaces" && <MarketplacesTab envName={name} marketplaces={data.marketplaces} />}

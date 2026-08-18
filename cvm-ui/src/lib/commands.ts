@@ -164,6 +164,14 @@ export function disablePlugin(name: string, plugin: string): Promise<string> {
   return invoke("disable_plugin", { name, plugin });
 }
 
+export function getClaudeMd(envName: string): Promise<string> {
+  return invoke("get_claude_md", { envName });
+}
+
+export function writeClaudeMd(envName: string, content: string): Promise<void> {
+  return invoke("write_claude_md", { envName, content });
+}
+
 export interface SkillContent {
   name: string;
   description: string;
