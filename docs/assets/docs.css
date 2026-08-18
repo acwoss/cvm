@@ -11,9 +11,9 @@
   --c-muted: #94a3b8;
   --c-faint: #4a5568;
   --c-nav-bg: rgba(11, 15, 23, 0.92);
-  --c-accent: #38bdf8;
-  --c-accent-soft: rgba(56, 189, 248, 0.12);
-  --c-accent-border: rgba(56, 189, 248, 0.28);
+  --c-accent: #f97316;
+  --c-accent-soft: rgba(249, 115, 22, 0.12);
+  --c-accent-border: rgba(249, 115, 22, 0.28);
   --c-code-bg: #161b22;
   --c-warn: #f59e0b;
   --c-warn-soft: rgba(245, 158, 11, 0.08);
@@ -82,7 +82,7 @@ a:hover { text-decoration: underline; }
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  background: linear-gradient(135deg, #f97316, #ea580c);
   display: grid;
   place-items: center;
   color: #0b0f17;

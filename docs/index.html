@@ -8,7 +8,8 @@
   <meta name="description" content="cvm is a fast, cross-platform virtual environment manager for Claude Code. Isolate configs, credentials, history, and MCP servers per project, and share reproducible setups via a secrets-free cvm.yaml manifest.">
   <link rel="canonical" href="https://getcvm.com/">
   <meta name="robots" content="index, follow">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png">
 
   <!-- Open Graph / Twitter -->
   <meta property="og:type" content="website">
@@ -61,8 +62,8 @@
       --c-muted:        #94a3b8;
       --c-faint:        #4a5568;
       --c-nav-bg:       rgba(11, 15, 23, 0.88);
-      --c-glow-start:   rgba(56, 189, 248, 0.06);
-      --c-grid:         rgba(56, 189, 248, 0.03);
+      --c-glow-start:   rgba(249, 115, 22, 0.06);
+      --c-grid:         rgba(249, 115, 22, 0.03);
       --c-code-bg:      #161b22;
       --c-star-bg:      #0b0f17;
       --c-scroll-thumb: #21262d;
@@ -80,7 +81,7 @@
       --c-muted:        #475569;
       --c-faint:        #94a3b8;
       --c-nav-bg:       rgba(240, 244, 248, 0.88);
-      --c-glow-start:   rgba(56, 189, 248, 0.08);
+      --c-glow-start:   rgba(249, 115, 22, 0.08);
       --c-grid:         rgba(14, 165, 233, 0.05);
       --c-code-bg:      #f1f5f9;
       --c-star-bg:      #f0f4f8;
@@ -130,7 +131,7 @@
     .nav-link:hover { color: var(--c-text); }
 
     .btn-primary {
-      background: #38bdf8;
+      background: #f97316;
       color: #0b0f17;
       font-weight: 700;
       font-size: 0.875rem;
@@ -146,8 +147,8 @@
       letter-spacing: -0.01em;
     }
     .btn-primary:hover {
-      background: #7dd3fc;
-      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+      background: #fdba74;
+      box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
     }
 
     .btn-ghost {
@@ -175,8 +176,8 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     }
     .card-hover:hover {
-      border-color: rgba(56, 189, 248, 0.3) !important;
-      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.12), 0 8px 32px rgba(0, 0, 0, 0.15);
+      border-color: rgba(249, 115, 22, 0.3) !important;
+      box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.12), 0 8px 32px rgba(0, 0, 0, 0.15);
       transform: translateY(-1px);
     }
 
@@ -185,7 +186,7 @@
       display: inline-block;
       width: 8px;
       height: 14px;
-      background: #38bdf8;
+      background: #f97316;
       animation: blink 1.1s step-end infinite;
       vertical-align: text-bottom;
       margin-left: 2px;
@@ -212,7 +213,7 @@
     }
     .theme-toggle:hover {
       border-color: var(--c-border-hover);
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
     }
     .theme-toggle-thumb {
       position: absolute;
@@ -220,7 +221,7 @@
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      background: #38bdf8;
+      background: #f97316;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -251,9 +252,9 @@
     }
     .os-tab:hover { color: var(--c-text); border-color: var(--c-border-hover); }
     .os-tab.active {
-      background: rgba(56,189,248,0.1);
-      border-color: rgba(56,189,248,0.3);
-      color: #38bdf8;
+      background: rgba(249, 115, 22,0.1);
+      border-color: rgba(249, 115, 22,0.3);
+      color: #f97316;
       font-weight: 600;
     }
 
@@ -343,7 +344,7 @@
       </button>
       <!-- Logo -->
       <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; flex-shrink: 0;">
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); display: flex; align-items: center; justify-content: center; color: #0b0f17;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); display: flex; align-items: center; justify-content: center; color: #0b0f17;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <rect x="5" y="8" width="14" height="10" rx="2" />
             <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
@@ -423,15 +424,15 @@
       <!-- Left -->
       <div>
         <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;">
-          <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); border-radius: 100px; padding: 4px 12px 4px 8px; font-size: 0.75rem; font-weight: 600; color: #38bdf8; letter-spacing: 0.01em;">
-            <span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; display: inline-block;"></span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(249, 115, 22,0.08); border: 1px solid rgba(249, 115, 22,0.2); border-radius: 100px; padding: 4px 12px 4px 8px; font-size: 0.75rem; font-weight: 600; color: #f97316; letter-spacing: 0.01em;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #f97316; display: inline-block;"></span>
             Virtual Environments for Claude Code
           </span>
         </div>
 
         <h1 style="margin: 0 0 20px; font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; color: var(--c-text);">
           Isolated, reproducible<br />
-          <span style="background: linear-gradient(90deg, #38bdf8, #7dd3fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">environments</span> for<br />
+          <span style="background: linear-gradient(90deg, #f97316, #fdba74); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">environments</span> for<br />
           Claude Code.
         </h1>
 
@@ -448,7 +449,7 @@
 
         <!-- Install box -->
         <div class="dynamic-surface" style="display: flex; align-items: center; gap: 12px; border-radius: 10px; padding: 10px 12px 10px 16px; margin-bottom: 24px;">
-          <span style="color: #38bdf8; flex-shrink: 0; display: flex;">
+          <span style="color: #f97316; flex-shrink: 0; display: flex;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
           </span>
           <code class="font-mono install-cmd-text" style="font-size: 0.78125rem; color: var(--c-muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">curl -fsSL https://getcvm.com/install.sh | bash</code>
@@ -489,7 +490,7 @@
   <!-- ── Product screenshot ── -->
   <section class="section-pad" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px 80px;">
     <div style="text-align: center; margin-bottom: 32px;">
-      <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Desktop app</div>
+      <div class="font-mono" style="font-size: 0.75rem; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Desktop app</div>
       <h2 style="margin: 0; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text);">Manage every environment visually</h2>
     </div>
     <div style="border-radius: 14px; overflow: hidden; border: 1px solid var(--c-border); box-shadow: 0 24px 60px -20px rgba(0,0,0,0.45);">
@@ -500,14 +501,14 @@
   <!-- ── Features ── -->
   <section id="features" class="section-pad" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px;">
     <div style="margin-bottom: 56px;">
-      <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Core capabilities</div>
+      <div class="font-mono" style="font-size: 0.75rem; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Core capabilities</div>
       <h2 style="margin: 0; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text);">Built for real project isolation</h2>
     </div>
 
     <div id="features-grid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
       <!-- Feature 1 -->
       <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249, 115, 22,0.1); border: 1px solid rgba(249, 115, 22,0.2); display: flex; align-items: center; justify-content: center; color: #f97316; margin-bottom: 20px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
         </div>
         <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Complete Isolation</h3>
@@ -515,7 +516,7 @@
       </div>
       <!-- Feature 2 -->
       <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249, 115, 22,0.1); border: 1px solid rgba(249, 115, 22,0.2); display: flex; align-items: center; justify-content: center; color: #f97316; margin-bottom: 20px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
         </div>
         <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Zero Config Drift</h3>
@@ -531,7 +532,7 @@
       </div>
       <!-- Feature 4 -->
       <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249, 115, 22,0.1); border: 1px solid rgba(249, 115, 22,0.2); display: flex; align-items: center; justify-content: center; color: #f97316; margin-bottom: 20px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>
         </div>
         <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Parallel Execution</h3>
@@ -539,7 +540,7 @@
       </div>
       <!-- Feature 5 -->
       <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249, 115, 22,0.1); border: 1px solid rgba(249, 115, 22,0.2); display: flex; align-items: center; justify-content: center; color: #f97316; margin-bottom: 20px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
         </div>
         <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Project Auto-Activate</h3>
@@ -547,7 +548,7 @@
       </div>
       <!-- Feature 6 -->
       <div class="card-hover dynamic-card" style="border-radius: 12px; padding: 28px;">
-        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); display: flex; align-items: center; justify-content: center; color: #38bdf8; margin-bottom: 20px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249, 115, 22,0.1); border: 1px solid rgba(249, 115, 22,0.2); display: flex; align-items: center; justify-content: center; color: #f97316; margin-bottom: 20px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
         </div>
         <h3 style="margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em;">Self-Update</h3>
@@ -564,7 +565,7 @@
   <section id="sharing-&-security" class="section-pad" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px;">
     <div id="sharing-grid" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: start;">
       <div>
-        <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Team sharing</div>
+        <div class="font-mono" style="font-size: 0.75rem; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">Team sharing</div>
         <h2 style="margin: 0 0 20px; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text); line-height: 1.15;">
           Share environments,<br />never secrets.
         </h2>
@@ -619,28 +620,28 @@
         </div>
         <div style="padding: 20px 24px;">
           <pre class="font-mono" style="font-size: 0.775rem; line-height: 1.75; margin: 0; white-space: pre-wrap; color: var(--c-muted);"><span style="color: var(--c-faint);"># cvm.yaml — shareable, secrets-free</span>
-<span style="color: #38bdf8;">version:</span> <span style="color: var(--c-text);">"1"</span>
+<span style="color: #f97316;">version:</span> <span style="color: var(--c-text);">"1"</span>
 
-<span style="color: #38bdf8;">settings:</span>
-  <span style="color: #38bdf8;">theme:</span> <span style="color: var(--c-text);">dark</span>
-  <span style="color: #38bdf8;">verbose:</span> <span style="color: var(--c-text);">false</span>
+<span style="color: #f97316;">settings:</span>
+  <span style="color: #f97316;">theme:</span> <span style="color: var(--c-text);">dark</span>
+  <span style="color: #f97316;">verbose:</span> <span style="color: var(--c-text);">false</span>
 
-<span style="color: #38bdf8;">mcp_servers:</span>
-<span style="color: var(--c-faint);">  - </span><span style="color: #38bdf8;">name:</span> <span style="color: var(--c-text);">filesystem</span>
-    <span style="color: #38bdf8;">command:</span> <span style="color: var(--c-text);">npx</span>
-    <span style="color: #38bdf8;">args:</span> <span style="color: var(--c-text);">["-y", "@modelcontextprotocol/server-filesystem"]</span>
-<span style="color: var(--c-faint);">  - </span><span style="color: #38bdf8;">name:</span> <span style="color: var(--c-text);">github</span>
-    <span style="color: #38bdf8;">command:</span> <span style="color: var(--c-text);">npx</span>
-    <span style="color: #38bdf8;">args:</span> <span style="color: var(--c-text);">["-y", "@modelcontextprotocol/server-github"]</span>
+<span style="color: #f97316;">mcp_servers:</span>
+<span style="color: var(--c-faint);">  - </span><span style="color: #f97316;">name:</span> <span style="color: var(--c-text);">filesystem</span>
+    <span style="color: #f97316;">command:</span> <span style="color: var(--c-text);">npx</span>
+    <span style="color: #f97316;">args:</span> <span style="color: var(--c-text);">["-y", "@modelcontextprotocol/server-filesystem"]</span>
+<span style="color: var(--c-faint);">  - </span><span style="color: #f97316;">name:</span> <span style="color: var(--c-text);">github</span>
+    <span style="color: #f97316;">command:</span> <span style="color: var(--c-text);">npx</span>
+    <span style="color: #f97316;">args:</span> <span style="color: var(--c-text);">["-y", "@modelcontextprotocol/server-github"]</span>
 
-<span style="color: #38bdf8;">skills:</span>
+<span style="color: #f97316;">skills:</span>
 <span style="color: var(--c-faint);">  - </span><span style="color: var(--c-muted);">review</span>
 <span style="color: var(--c-faint);">  - </span><span style="color: var(--c-muted);">aesthetic-stance</span>
 
-<span style="color: #38bdf8;">env_vars:</span>
+<span style="color: #f97316;">env_vars:</span>
 <span style="color: var(--c-faint);">  # Variable names only — values never exported</span>
-  <span style="color: #38bdf8;">GITHUB_TOKEN:</span> <span style="color: var(--c-text);">""</span>
-  <span style="color: #38bdf8;">OPENAI_API_KEY:</span> <span style="color: var(--c-text);">""</span></pre>
+  <span style="color: #f97316;">GITHUB_TOKEN:</span> <span style="color: var(--c-text);">""</span>
+  <span style="color: #f97316;">OPENAI_API_KEY:</span> <span style="color: var(--c-text);">""</span></pre>
         </div>
       </div>
     </div>
@@ -653,7 +654,7 @@
   <!-- ── Commands ── -->
   <section id="commands" class="section-pad" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px;">
     <div style="margin-bottom: 48px;">
-      <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">CLI Reference</div>
+      <div class="font-mono" style="font-size: 0.75rem; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; font-weight: 500;">CLI Reference</div>
       <h2 style="margin: 0; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text);">Every command you need</h2>
     </div>
 
@@ -662,7 +663,7 @@
 
     <!-- Highlighted Command Box -->
     <div id="cmd-highlight" class="dynamic-card" style="border-radius: 12px; padding: 28px 32px; display: flex; align-items: flex-start; gap: 24px; margin-bottom: 24px;">
-      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.15); display: flex; align-items: center; justify-content: center; color: #38bdf8; flex-shrink: 0;">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249, 115, 22,0.08); border: 1px solid rgba(249, 115, 22,0.15); display: flex; align-items: center; justify-content: center; color: #f97316; flex-shrink: 0;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
       </div>
       <div>
@@ -682,7 +683,7 @@
   <!-- ── Bottom CTA ── -->
   <section class="section-pad" style="position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 80px 24px; text-align: center;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(500px, 100%); height: 250px; background: radial-gradient(ellipse at center, var(--c-glow-start) 0%, transparent 70%); pointer-events: none;"></div>
-    <div class="font-mono" style="font-size: 0.75rem; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; font-weight: 500;">Get started</div>
+    <div class="font-mono" style="font-size: 0.75rem; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; font-weight: 500;">Get started</div>
     <h2 style="margin: 0 auto 16px; max-width: 560px; font-size: clamp(1.75rem, 3vw, 2.75rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text); line-height: 1.1;">
       Ship cleaner projects with isolated Claude environments
     </h2>
@@ -717,7 +718,7 @@
       <div id="footer-inner" style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 32px; align-items: start;">
         <div>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-            <div style="width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); display: flex; align-items: center; justify-content: center; color: #0b0f17;">
+            <div style="width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); display: flex; align-items: center; justify-content: center; color: #0b0f17;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="5" y="8" width="14" height="10" rx="2" />
                 <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
@@ -904,7 +905,7 @@
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
             ctx.lineWidth = 0.75;
             ctx.stroke();
           }
@@ -918,12 +919,12 @@
         const glow = (nearMouse ? 0.9 : p.opacity) * particleAlphaMul;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(56, 189, 248, ${glow})`;
+        ctx.fillStyle = `rgba(249, 115, 22, ${glow})`;
         ctx.fill();
         if (nearMouse) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius * 3, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(56, 189, 248, ${0.06 * particleAlphaMul})`;
+          ctx.fillStyle = `rgba(249, 115, 22, ${0.06 * particleAlphaMul})`;
           ctx.fill();
         }
       }
@@ -976,7 +977,7 @@
           } else if (step.type === 'env') {
             lineEl.style.marginTop = '4px';
             lineEl.innerHTML = `
-              <span style="background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; display: inline-block;">
+              <span style="background: rgba(249, 115, 22,0.12); border: 1px solid rgba(249, 115, 22,0.3); color: #f97316; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; display: inline-block;">
                 ${step.text}
               </span>`;
           } else {
@@ -1036,9 +1037,9 @@
           const icon = btn.querySelector('.copy-icon');
           const text = btn.querySelector('.copy-text');
           
-          btn.style.background = 'rgba(56,189,248,0.15)';
-          btn.style.borderColor = 'rgba(56,189,248,0.4)';
-          btn.style.color = '#38bdf8';
+          btn.style.background = 'rgba(249, 115, 22,0.15)';
+          btn.style.borderColor = 'rgba(249, 115, 22,0.4)';
+          btn.style.color = '#f97316';
           
           if (icon) {
             icon.innerHTML = '<polyline points="20 6 9 17 4 12" />';
@@ -1091,10 +1092,10 @@
         btn.textContent = c.tab || c.cmd;
         btn.className = 'font-mono';
         btn.style.cssText = `
-          background: ${activeCmdIndex === i ? 'rgba(56,189,248,0.1)' : 'var(--c-card)'};
-          border: 1px solid ${activeCmdIndex === i ? 'rgba(56,189,248,0.3)' : 'var(--c-border)'};
+          background: ${activeCmdIndex === i ? 'rgba(249, 115, 22,0.1)' : 'var(--c-card)'};
+          border: 1px solid ${activeCmdIndex === i ? 'rgba(249, 115, 22,0.3)' : 'var(--c-border)'};
           border-radius: 8px; padding: 8px 16px; cursor: pointer;
-          color: ${activeCmdIndex === i ? '#38bdf8' : 'var(--c-muted)'};
+          color: ${activeCmdIndex === i ? '#f97316' : 'var(--c-muted)'};
           font-size: 0.78125rem; font-weight: ${activeCmdIndex === i ? 600 : 400};
           transition: all 0.15s ease;
         `;
@@ -1137,7 +1138,7 @@
 
         row.innerHTML = `
           <div style="padding: 14px 20px; border-right: 1px solid var(--c-border-sub);">
-            <code class="font-mono" style="font-size: 0.8125rem; color: ${activeCmdIndex === i ? '#38bdf8' : 'var(--c-text)'}; font-weight: 500; word-break: break-word;">${c.cmd}</code>
+            <code class="font-mono" style="font-size: 0.8125rem; color: ${activeCmdIndex === i ? '#f97316' : 'var(--c-text)'}; font-weight: 500; word-break: break-word;">${c.cmd}</code>
             ${aliasHtml}
           </div>
           <div style="padding: 14px 20px;">
