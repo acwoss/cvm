@@ -248,7 +248,11 @@ pub struct UpdateInfo {
 }
 
 const REPO: &str = "acwoss/cvm";
-const UI_BIN_NAME: &str = if cfg!(windows) { "cvm-ui.exe" } else { "cvm-ui" };
+const UI_BIN_NAME: &str = if cfg!(windows) {
+    "cvm-ui.exe"
+} else {
+    "cvm-ui"
+};
 
 #[tauri::command]
 pub fn check_ui_update() -> Result<Option<UpdateInfo>, CommandError> {
@@ -268,7 +272,7 @@ pub fn check_ui_update() -> Result<Option<UpdateInfo>, CommandError> {
 #[tauri::command]
 pub fn apply_ui_update() -> Result<(), CommandError> {
     let latest_tag = cvm_core::update::fetch_latest_tag(REPO, 10)?;
-    let target = cvm_core::update::target_triple()?;
+    let target = cvm_core::update::target_triple_for_ui()?;
     let asset = cvm_core::update::asset_name("cvm-ui", target);
     let url = format!("https://github.com/{REPO}/releases/download/{latest_tag}/{asset}");
 

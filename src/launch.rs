@@ -34,7 +34,7 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
     }
 
     let tag = fetch_latest_tag()?;
-    let target = cvm_core::update::target_triple()?;
+    let target = cvm_core::update::target_triple_for_ui()?;
     let asset = cvm_core::update::asset_name("cvm-ui", target);
     let url = format!("https://github.com/{REPO}/releases/download/{tag}/{asset}");
 
