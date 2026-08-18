@@ -5,7 +5,7 @@ import { TrashIcon } from "../components/Icons";
 import { commandErrorMessage, deleteHook, listHooks, setHookEnabled } from "../lib/commands";
 
 const FILTERS = [
-  "Todos",
+  "All",
   "post-create",
   "pre-activate",
   "post-activate",
@@ -22,7 +22,7 @@ function eventColorClass(event: string): string {
 export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
   const queryClient = useQueryClient();
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("Todos");
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
 
   const { data, isPending, error } = useQuery({
     queryKey: ["hooks"],
@@ -43,7 +43,7 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
   });
 
   function handleDelete(event: string) {
-    if (window.confirm(`Remover o hook '${event}'? Isso não pode ser desfeito.`)) {
+    if (window.confirm(`Remove the hook '${event}'? This cannot be undone.`)) {
       deleteMutation.mutate(event);
     }
   }
@@ -52,7 +52,7 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
     return <HookEditor key={editingEvent} event={editingEvent} onClose={() => setEditingEvent(null)} />;
   }
 
-  const filtered = data?.filter((hook) => filter === "Todos" || hook.event === filter) ?? [];
+  const filtered = data?.filter((hook) => filter === "All" || hook.event === filter) ?? [];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -78,19 +78,19 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-7 py-4">
-        {isPending && <p className="text-sm text-neutral-400">Carregando hooks…</p>}
-        {error && <p className="text-sm text-red-400">Erro ao listar hooks: {commandErrorMessage(error)}</p>}
+        {isPending && <p className="text-sm text-neutral-400">Loading hooks…</p>}
+        {error && <p className="text-sm text-red-400">Error listing hooks: {commandErrorMessage(error)}</p>}
         {deleteMutation.error && (
-          <p className="mb-2 text-xs text-red-400">Erro ao remover: {commandErrorMessage(deleteMutation.error)}</p>
+          <p className="mb-2 text-xs text-red-400">Error removing: {commandErrorMessage(deleteMutation.error)}</p>
         )}
         {toggleMutation.error && (
-          <p className="mb-2 text-xs text-red-400">Erro ao atualizar: {commandErrorMessage(toggleMutation.error)}</p>
+          <p className="mb-2 text-xs text-red-400">Error updating: {commandErrorMessage(toggleMutation.error)}</p>
         )}
 
         {data && (
           <>
             <div className="mb-1 grid grid-cols-[1fr_150px_80px_60px] gap-3 px-3.5 py-1.5">
-              {["Evento / Script", "Status", "", ""].map((h, i) => (
+              {["Event / Script", "Status", "", ""].map((h, i) => (
                 <span key={i} className="text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
                   {h}
                 </span>
@@ -108,7 +108,7 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
                   <div className="min-w-0">
                     <div className="mb-0.5 font-mono text-xs font-medium text-neutral-100">{hook.event}</div>
                     <div className="truncate font-mono text-[11px] text-neutral-600">
-                      {hook.configured ? (hook.preview ?? "(script vazio)") : "não configurado"}
+                      {hook.configured ? (hook.preview ?? "(empty script)") : "not configured"}
                     </div>
                   </div>
                   <span
@@ -118,7 +118,7 @@ export function HooksPage({ onBack: _onBack }: { onBack: () => void }) {
                         : "border border-neutral-800 text-neutral-600"
                     }`}
                   >
-                    {hook.configured ? (hook.enabled ? "ativo" : "desativado") : "vazio"}
+                    {hook.configured ? (hook.enabled ? "active" : "disabled") : "empty"}
                   </span>
                   {hook.configured ? (
                     <button

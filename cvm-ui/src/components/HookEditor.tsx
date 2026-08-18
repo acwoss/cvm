@@ -36,7 +36,7 @@ export function HookEditor({ event, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950">
       <div className="flex h-12 flex-shrink-0 items-center gap-3 border-b border-neutral-800 px-5">
         <button onClick={onClose} className="text-sm text-neutral-400 hover:text-neutral-200">
-          ← Voltar
+          ← Back
         </button>
         <div className="h-5 w-px bg-neutral-800" />
         <span className="font-mono text-xs font-semibold text-neutral-100">{event}</span>
@@ -46,20 +46,20 @@ export function HookEditor({ event, onClose }: Props) {
           disabled={data === undefined || saveMutation.isPending}
           className="rounded border border-orange-500/40 bg-orange-500/10 px-3.5 py-1 text-xs font-semibold text-orange-400 disabled:opacity-50"
         >
-          {saveMutation.isPending ? "Salvando…" : "Salvar"}
+          {saveMutation.isPending ? "Saving…" : "Save"}
         </button>
       </div>
 
-      {isPending && <p className="p-6 text-sm text-neutral-400">Carregando…</p>}
-      {error && <p className="p-6 text-sm text-red-400">Erro ao carregar: {commandErrorMessage(error)}</p>}
+      {isPending && <p className="p-6 text-sm text-neutral-400">Loading…</p>}
+      {error && <p className="p-6 text-sm text-red-400">Error loading: {commandErrorMessage(error)}</p>}
       {saveMutation.error && (
         <p className="border-b border-red-900/40 bg-red-950/20 px-5 py-2 text-xs text-red-400">
-          Erro ao salvar: {commandErrorMessage(saveMutation.error)}
+          Error saving: {commandErrorMessage(saveMutation.error)}
         </p>
       )}
       {saveMutation.isSuccess && (
         <p className="border-b border-emerald-900/40 bg-emerald-950/20 px-5 py-2 text-xs text-emerald-400">
-          Salvo.
+          Saved.
         </p>
       )}
 

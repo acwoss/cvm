@@ -154,7 +154,7 @@ pub fn set_hook_enabled(event: &str, enabled: bool) -> Result<()> {
     #[cfg(not(unix))]
     {
         let _ = enabled;
-        bail!("desabilitar hooks individualmente não é suportado nesta plataforma")
+        bail!("disabling hooks individually is not supported on this platform")
     }
 }
 
