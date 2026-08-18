@@ -12,6 +12,8 @@ through a plain YAML manifest (`cvm.yaml`) that can live in a Git repository
 alongside your code, without ever leaking tokens, auth files, or session
 history.
 
+![cvm-ui showing the environments list](docs/assets/screenshot-environments.png)
+
 ## Features
 
 - **Isolated environments** — each environment is its own directory under
@@ -101,6 +103,29 @@ the right asset for your platform and replaces the running binary in
 place — no need to re-run the install script. Requires `curl` and `tar` on
 `PATH` (the same requirement `install.sh` already has). If you installed
 via `cargo install`, re-run that command instead.
+
+`cvm create` and `cvm use` also check for a newer version on their own
+(cached for 24h, silent on any failure) and print a one-line suggestion to
+run `cvm update` when one is available — never during activation output, so
+it can't interfere with shell hooks.
+
+## Desktop GUI (cvm-ui)
+
+`cvm` also ships a desktop app, `cvm-ui`, for people who'd rather click
+through their environments than run every command from a terminal. It's a
+thin visual layer over the same `~/.cvm/envs/` directories the CLI manages -
+nothing about the underlying environment format changes.
+
+```sh
+cvm launch
+```
+
+The first run downloads the matching `cvm-ui` release asset into
+`~/.cvm/bin/` and launches it; later runs just launch the already-installed
+binary. See the screenshot above for the environments list - the app also
+has per-environment tabs for MCP servers, env vars, skills & agents, and
+config, a global Hooks editor, and a Settings screen with its own
+check-for-updates/update-now action.
 
 ## Shell Integration Setup
 
