@@ -238,3 +238,16 @@ export function setHookEnabled(event: string, enabled: boolean): Promise<void> {
 export function deleteHook(event: string): Promise<void> {
   return invoke("delete_hook", { event });
 }
+
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+}
+
+export function checkUiUpdate(): Promise<UpdateInfo | null> {
+  return invoke("check_ui_update");
+}
+
+export function applyUiUpdate(): Promise<void> {
+  return invoke("apply_ui_update");
+}
