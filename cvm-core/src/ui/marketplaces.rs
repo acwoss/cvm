@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,14 @@ pub struct MarketplaceInfo {
     pub id: String,
     pub repo: Option<String>,
     pub plugins: Vec<PluginInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginDirInfo {
+    pub marketplace: String,
+    pub plugin: String,
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
@@ -100,6 +108,31 @@ pub fn list_marketplaces(env_dir: &Path) -> Result<Vec<MarketplaceInfo>> {
     }
     marketplaces.sort_by(|a, b| a.id.cmp(&b.id));
     Ok(marketplaces)
+}
+
+pub fn list_enabled_plugin_dirs(env_dir: &Path) -> Result<Vec<PluginDirInfo>> {
+    let mut dirs = Vec::new();
+    for marketplace in list_marketplaces(env_dir)? {
+        for plugin in marketplace.plugins {
+            if !plugin.enabled || !plugin.installed {
+                continue;
+            }
+            let Some(version) = plugin.version else {
+                continue;
+            };
+            let path = env_dir
+                .join("plugins/cache")
+                .join(&marketplace.id)
+                .join(&plugin.name)
+                .join(&version);
+            dirs.push(PluginDirInfo {
+                marketplace: marketplace.id.clone(),
+                plugin: plugin.name,
+                path,
+            });
+        }
+    }
+    Ok(dirs)
 }
 
 fn read_enabled_plugins(env_dir: &Path) -> Result<BTreeMap<String, bool>> {
@@ -203,5 +236,19 @@ mod tests {
     fn returns_empty_list_when_no_marketplaces_known() {
         let dir = tempfile::tempdir().unwrap();
         assert_eq!(list_marketplaces(dir.path()).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn lists_directory_only_for_enabled_and_installed_plugins() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("plugins")).unwrap();
+        write_fixture(dir.path());
+
+        let dirs = list_enabled_plugin_dirs(dir.path()).unwrap();
+
+        assert_eq!(dirs.len(), 1);
+        assert_eq!(dirs[0].marketplace, "acme");
+        assert_eq!(dirs[0].plugin, "tool");
+        assert_eq!(dirs[0].path, dir.path().join("plugins/cache/acme/tool/1.2.3"));
     }
 }
