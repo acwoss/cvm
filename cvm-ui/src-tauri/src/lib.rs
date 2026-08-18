@@ -7,6 +7,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::list_environments,
             commands::get_environment_detail,
+            commands::check_auth_status,
             commands::reveal_env_var,
             commands::open_in_claude,
             commands::create_environment,

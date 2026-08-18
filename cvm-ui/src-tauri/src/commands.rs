@@ -1,6 +1,7 @@
 use cvm_core::env;
 use cvm_core::ui::{
-    self, EnvVarSource, EnvironmentDetail, EnvironmentSummary, HookSummary, SkillContent,
+    self, AuthStatus, EnvVarSource, EnvironmentDetail, EnvironmentSummary, HookSummary,
+    SkillContent,
 };
 
 /// Erro serializável para o frontend - `anyhow::Error` não implementa
@@ -28,6 +29,11 @@ pub fn list_environments() -> Result<Vec<EnvironmentSummary>, CommandError> {
 #[tauri::command]
 pub fn get_environment_detail(name: String) -> Result<EnvironmentDetail, CommandError> {
     Ok(ui::environment_detail(&name)?)
+}
+
+#[tauri::command]
+pub fn check_auth_status(name: String) -> Result<AuthStatus, CommandError> {
+    Ok(ui::check_auth_status(&name)?)
 }
 
 #[tauri::command]

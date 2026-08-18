@@ -141,7 +141,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
                 onEdit={(kind, id) => setEditing({ kind, id })}
               />
             )}
-            {tab === "account" && <AccountTab account={data.account} />}
+            {tab === "account" && <AccountTab envName={name} account={data.account} />}
           </div>
         </div>
       )}

@@ -44,11 +44,25 @@ export interface SkillOrAgentInfo {
   builtIn: boolean;
 }
 
+export type AuthMethod = "oauth" | "apiKey";
+
 export interface AccountInfo {
+  authMethod: AuthMethod;
   email: string | null;
   displayName: string | null;
   organizationName: string | null;
   seatTier: string | null;
+}
+
+export interface AuthStatus {
+  loggedIn: boolean;
+  authMethod: string;
+  apiProvider: string | null;
+  email: string | null;
+  orgId: string | null;
+  orgName: string | null;
+  subscriptionType: string | null;
+  apiKeySource: string | null;
 }
 
 export interface EnvironmentDetail {
@@ -74,6 +88,10 @@ export function revealEnvVar(name: string, source: EnvVarSource, key: string): P
 
 export function openInClaude(name: string): Promise<void> {
   return invoke("open_in_claude", { name });
+}
+
+export function checkAuthStatus(name: string): Promise<AuthStatus> {
+  return invoke("check_auth_status", { name });
 }
 
 export function commandErrorMessage(err: unknown): string {
