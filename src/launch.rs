@@ -1,8 +1,8 @@
 //! `cvm launch`: resolves the UI binary under `~/.cvm/bin/`, downloading it
 //! from the matching GitHub release asset if missing, then spawns it
-//! detached. Mirrors the download/extract approach in `update.rs`, but
-//! targets a different asset (`cvm-ui-<target>.<ext>`) and never replaces
-//! the running `cvm` binary.
+//! detached. Mirrors the download/extract approach in `cvm_core::update`,
+//! but targets a different asset (`cvm-ui-<target>.<ext>`) and never
+//! replaces the running `cvm` binary.
 
 use std::fs;
 use std::path::PathBuf;
@@ -17,38 +17,12 @@ const UI_BIN_NAME: &str = if cfg!(windows) {
     "cvm-ui"
 };
 
-fn target_triple() -> Result<&'static str> {
-    if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        Ok("x86_64-unknown-linux-gnu")
-    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
-        Ok("x86_64-apple-darwin")
-    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        Ok("aarch64-apple-darwin")
-    } else if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
-        Ok("x86_64-pc-windows-msvc")
-    } else {
-        bail!(
-            "no prebuilt cvm-ui release for this platform yet; \
-             build it manually from cvm-ui/ with `pnpm tauri build`"
-        )
-    }
-}
-
 fn ui_bin_dir() -> Result<PathBuf> {
     Ok(cvm_core::env::cvm_home()?.join("bin"))
 }
 
 fn ui_bin_path() -> Result<PathBuf> {
     Ok(ui_bin_dir()?.join(UI_BIN_NAME))
-}
-
-fn asset_name(target: &str) -> String {
-    let ext = if target.contains("windows") {
-        "zip"
-    } else {
-        "tar.gz"
-    };
-    format!("cvm-ui-{target}.{ext}")
 }
 
 /// Ensures the UI binary exists locally, downloading it from the given
@@ -60,8 +34,8 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
     }
 
     let tag = fetch_latest_tag()?;
-    let target = target_triple()?;
-    let asset = asset_name(target);
+    let target = cvm_core::update::target_triple()?;
+    let asset = cvm_core::update::asset_name("cvm-ui", target);
     let url = format!("https://github.com/{REPO}/releases/download/{tag}/{asset}");
 
     let bin_dir = ui_bin_dir()?;
@@ -76,35 +50,16 @@ pub fn ensure_installed(fetch_latest_tag: impl Fn() -> Result<String>) -> Result
     };
 
     let tmp_archive = tmp_dir.join(&asset);
-    let status = Command::new("curl")
-        .args(["-fsSL", "-o"])
-        .arg(&tmp_archive)
-        .arg(&url)
-        .status()
-        .context("failed to run 'curl' - is it installed and on PATH?")?;
-    if !status.success() {
+    if let Err(err) = cvm_core::update::download_asset(&url, &tmp_archive) {
         cleanup(&tmp_dir);
-        bail!("failed to download {url}");
+        return Err(err);
+    }
+    if let Err(err) = cvm_core::update::extract_asset(&tmp_archive, &tmp_dir) {
+        cleanup(&tmp_dir);
+        return Err(err);
     }
 
-    let extract_flag = if asset.ends_with(".zip") {
-        "-xf"
-    } else {
-        "-xzf"
-    };
-    let status = Command::new("tar")
-        .arg(extract_flag)
-        .arg(&tmp_archive)
-        .arg("-C")
-        .arg(&tmp_dir)
-        .status()
-        .context("failed to run 'tar' - is it installed and on PATH?")?;
-    if !status.success() {
-        cleanup(&tmp_dir);
-        bail!("failed to extract {asset}");
-    }
-
-    let found = match crate::update::find_binary(&tmp_dir, UI_BIN_NAME) {
+    let found = match cvm_core::update::find_binary(&tmp_dir, UI_BIN_NAME) {
         Ok(found) => found,
         Err(err) => {
             cleanup(&tmp_dir);
@@ -152,18 +107,6 @@ mod tests {
     static HOME_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
-    fn asset_name_uses_zip_only_for_windows() {
-        assert_eq!(
-            asset_name("x86_64-pc-windows-msvc"),
-            "cvm-ui-x86_64-pc-windows-msvc.zip"
-        );
-        assert_eq!(
-            asset_name("x86_64-unknown-linux-gnu"),
-            "cvm-ui-x86_64-unknown-linux-gnu.tar.gz"
-        );
-    }
-
-    #[test]
     fn ensure_installed_skips_download_when_binary_already_present() {
         let _guard = HOME_LOCK.lock().unwrap();
         let home = tempfile::tempdir().unwrap();
@@ -203,9 +146,6 @@ mod tests {
             std::env::set_var("CVM_HOME", home.path().join(".cvm"));
         }
 
-        // Build a real tar.gz containing a nested "cvm-ui-<target>/cvm-ui" file,
-        // the exact layout release.yml produces, and serve it via a fake `curl`
-        // (a shim on PATH) so this test needs no network access.
         let staging = tempfile::tempdir().unwrap();
         let nested_dir = staging.path().join("cvm-ui-fake-target");
         std::fs::create_dir_all(&nested_dir).unwrap();
@@ -241,11 +181,6 @@ mod tests {
             std::env::set_var("PATH", format!("{}:{}", fake_bin_dir.display(), old_path));
         }
 
-        // target_triple() would pick a real platform triple and build a URL
-        // release.yml doesn't actually serve for "fake-target" - but since our
-        // fake curl ignores the URL entirely and always serves the same fixed
-        // archive, this still exercises the real extraction/find/install path
-        // regardless of what target string ends up in the (unused) URL.
         let result = ensure_installed(|| Ok("v0.0.0".to_string()));
 
         // SAFETY: guardado por HOME_LOCK.
@@ -257,7 +192,6 @@ mod tests {
         let path = result.unwrap();
         assert_eq!(path, home.path().join(".cvm/bin").join(UI_BIN_NAME));
         assert_eq!(std::fs::read_to_string(&path).unwrap(), "fake ui binary");
-        // The extracted temp directory must not linger.
         assert!(!home.path().join(".cvm/bin/cvm-ui-fake-target").exists());
     }
 }
