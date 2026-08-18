@@ -9,7 +9,7 @@ name = "cvm"
 # .github/workflows/release.yml) - ao dar bump aqui, também dar bump em
 # cvm-ui/src-tauri/Cargo.toml, cvm-ui/src-tauri/tauri.conf.json e
 # cvm-ui/package.json para o mesmo valor.
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 description = "Claude Virtualenv Manager - isolate and share Claude Code configuration environments"
 license = "MIT"
