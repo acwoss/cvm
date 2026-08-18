@@ -1014,7 +1014,10 @@
       return 'linux';
     }
 
+    let currentInstallOS = detectOS();
+
     function setInstallOS(os) {
+      currentInstallOS = os;
       const cmd = INSTALL_COMMANDS[os] || INSTALL_COMMANDS.linux;
       document.querySelectorAll('.os-tabs .os-tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.os === os);
@@ -1034,9 +1037,16 @@
       btn.addEventListener('click', () => {
         const textToCopy = btn.getAttribute('data-copy');
         navigator.clipboard.writeText(textToCopy).then(() => {
+          if (btn.classList.contains('install-copy-btn') && typeof newrelic === 'object') {
+            newrelic.addPageAction('InstallCommandCopied', {
+              os: currentInstallOS,
+              command: textToCopy,
+            });
+          }
+
           const icon = btn.querySelector('.copy-icon');
           const text = btn.querySelector('.copy-text');
-          
+
           btn.style.background = 'rgba(249, 115, 22,0.15)';
           btn.style.borderColor = 'rgba(249, 115, 22,0.4)';
           btn.style.color = '#f97316';
