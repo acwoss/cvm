@@ -11,6 +11,7 @@ serde_json = "1"
 serde_yaml = "0.9"
 anyhow = "1"
 dirs = "5"
+self-replace = "1.5"
 
 [dev-dependencies]
 tempfile = "3"

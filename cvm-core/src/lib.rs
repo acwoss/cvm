@@ -5,3 +5,4 @@ pub mod shims;
 #[cfg(test)]
 mod test_support;
 pub mod ui;
+pub mod update;
