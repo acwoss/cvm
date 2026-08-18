@@ -6,7 +6,7 @@ mod skill_editor;
 mod skills;
 mod summary;
 
-pub use account::AccountInfo;
+pub use account::{AccountInfo, AuthMethod, AuthStatus};
 pub use config::{
     list_env_var_summaries, read_config_section, remove_env_var, reveal_value,
     write_config_section, write_env_var, ConfigSection, EnvVarSource, EnvVarSummary,
@@ -88,6 +88,15 @@ pub fn environment_detail(name: &str) -> Result<EnvironmentDetail> {
 pub fn reveal_env_var(name: &str, source: EnvVarSource, key: &str) -> Result<String> {
     let dir = env::ensure_env_exists(name)?;
     config::reveal_value(&dir, source, key)
+}
+
+/// Roda `claude auth status` no ambiente `name` e retorna o resultado bruto.
+/// Lê o stdout independente do código de saída - `claude` sai com 1 quando
+/// não autenticado, mas ainda imprime um JSON válido (`loggedIn: false`),
+/// que não é uma falha a propagar como erro.
+pub fn check_auth_status(name: &str) -> Result<AuthStatus> {
+    let output = env::run_claude_command(name, &["auth".to_string(), "status".to_string()])?;
+    account::parse_auth_status(&output.stdout)
 }
 
 #[cfg(test)]
