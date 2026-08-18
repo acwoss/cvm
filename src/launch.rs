@@ -8,7 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 
 const REPO: &str = "acwoss/cvm";
 const UI_BIN_NAME: &str = if cfg!(windows) {
