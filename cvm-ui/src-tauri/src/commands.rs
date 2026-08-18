@@ -1,3 +1,4 @@
+use anyhow::Context;
 use cvm_core::env;
 use cvm_core::ui::{
     self, AuthStatus, EnvVarSource, EnvironmentDetail, EnvironmentSummary, HookSummary,
@@ -237,5 +238,65 @@ pub fn delete_hook(event: String) -> Result<(), CommandError> {
 #[tauri::command]
 pub fn set_hook_enabled(event: String, enabled: bool) -> Result<(), CommandError> {
     ui::set_hook_enabled(&event, enabled)?;
+    Ok(())
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct UpdateInfo {
+    pub current: String,
+    pub latest: String,
+}
+
+const REPO: &str = "acwoss/cvm";
+const UI_BIN_NAME: &str = if cfg!(windows) { "cvm-ui.exe" } else { "cvm-ui" };
+
+#[tauri::command]
+pub fn check_ui_update() -> Result<Option<UpdateInfo>, CommandError> {
+    let current = env!("CARGO_PKG_VERSION");
+    let latest_tag = cvm_core::update::fetch_latest_tag(REPO, 10)?;
+    let latest = latest_tag.trim_start_matches('v').to_string();
+    if latest == current {
+        Ok(None)
+    } else {
+        Ok(Some(UpdateInfo {
+            current: current.to_string(),
+            latest,
+        }))
+    }
+}
+
+#[tauri::command]
+pub fn apply_ui_update() -> Result<(), CommandError> {
+    let latest_tag = cvm_core::update::fetch_latest_tag(REPO, 10)?;
+    let target = cvm_core::update::target_triple()?;
+    let asset = cvm_core::update::asset_name("cvm-ui", target);
+    let url = format!("https://github.com/{REPO}/releases/download/{latest_tag}/{asset}");
+
+    let tmp_dir = std::env::temp_dir().join(format!("cvm-ui-self-update-{}", std::process::id()));
+    std::fs::create_dir_all(&tmp_dir).context("failed to create temp dir")?;
+    let cleanup = |dir: &std::path::Path| {
+        let _ = std::fs::remove_dir_all(dir);
+    };
+
+    let archive_path = tmp_dir.join(&asset);
+    if let Err(err) = cvm_core::update::download_asset(&url, &archive_path) {
+        cleanup(&tmp_dir);
+        return Err(err.into());
+    }
+    if let Err(err) = cvm_core::update::extract_asset(&archive_path, &tmp_dir) {
+        cleanup(&tmp_dir);
+        return Err(err.into());
+    }
+    let new_binary = match cvm_core::update::find_binary(&tmp_dir, UI_BIN_NAME) {
+        Ok(path) => path,
+        Err(err) => {
+            cleanup(&tmp_dir);
+            return Err(err.into());
+        }
+    };
+
+    let result = cvm_core::update::replace_running_binary(&new_binary);
+    cleanup(&tmp_dir);
+    result?;
     Ok(())
 }

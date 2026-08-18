@@ -34,6 +34,8 @@ pub fn run() {
             commands::write_hook,
             commands::delete_hook,
             commands::set_hook_enabled,
+            commands::check_ui_update,
+            commands::apply_ui_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

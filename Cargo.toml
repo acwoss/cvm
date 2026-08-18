@@ -5,6 +5,10 @@ default-members = ["."]
 
 [package]
 name = "cvm"
+# `cvm` e `cvm-ui` são publicados juntos sob a mesma tag de release (ver
+# .github/workflows/release.yml) - ao dar bump aqui, também dar bump em
+# cvm-ui/src-tauri/Cargo.toml, cvm-ui/src-tauri/tauri.conf.json e
+# cvm-ui/package.json para o mesmo valor.
 version = "0.4.0"
 edition = "2021"
 description = "Claude Virtualenv Manager - isolate and share Claude Code configuration environments"
