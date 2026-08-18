@@ -19,9 +19,9 @@ interface Props {
 }
 
 const NAV_ITEMS: { id: NavPage; icon: React.ComponentType<{ size?: number }>; label: string }[] = [
-  { id: "environments", icon: HomeIcon, label: "Ambientes" },
+  { id: "environments", icon: HomeIcon, label: "Environments" },
   { id: "hooks", icon: TerminalIcon, label: "Hooks" },
-  { id: "settings", icon: SettingsIcon, label: "Configurações" },
+  { id: "settings", icon: SettingsIcon, label: "Settings" },
 ];
 
 export function Sidebar({ active, onNav, onQuickCreate }: Props) {
@@ -56,10 +56,10 @@ export function Sidebar({ active, onNav, onQuickCreate }: Props) {
             ficam presentes só por fidelidade visual ao mockup, sem fingir uma
             funcionalidade que não existe, mesmo tratamento que o protótipo dá ao
             ícone de nuvem abaixo. */}
-        <div className="mt-1 flex h-9 w-9 cursor-default items-center justify-center text-neutral-800" title="Em breve">
+        <div className="mt-1 flex h-9 w-9 cursor-default items-center justify-center text-neutral-800" title="Coming soon">
           <PackageIcon />
         </div>
-        <div className="flex h-9 w-9 cursor-default items-center justify-center text-neutral-800" title="Em breve">
+        <div className="flex h-9 w-9 cursor-default items-center justify-center text-neutral-800" title="Coming soon">
           <ServerIcon />
         </div>
       </div>
@@ -69,7 +69,7 @@ export function Sidebar({ active, onNav, onQuickCreate }: Props) {
       </div>
       <button
         onClick={onQuickCreate}
-        title="Novo ambiente"
+        title="New environment"
         className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 transition-colors hover:border-orange-500/60 hover:bg-orange-500/10 hover:text-orange-500"
       >
         <PlusIcon />

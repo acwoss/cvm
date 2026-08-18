@@ -46,14 +46,14 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
     envvars: `Env Vars (${envVarsCount})`,
     skills: `Skills & Agents (${skillsAgentsCount})`,
     config: "Configuration",
-    account: "Conta",
+    account: "Account",
   };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <header className="flex-shrink-0 border-b border-neutral-800 px-7 pb-4 pt-5">
         <button onClick={onBack} className="mb-2 text-xs text-neutral-500 hover:text-neutral-300">
-          ← Ambientes <span className="text-neutral-700">/</span> <span className="text-neutral-300">{name}</span>
+          ← Environments <span className="text-neutral-700">/</span> <span className="text-neutral-300">{name}</span>
         </button>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -63,7 +63,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
                 <h1 className="text-xl font-bold tracking-tight text-neutral-100">{name}</h1>
                 {data?.active && (
                   <span className="rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wide text-emerald-400">
-                    ATIVO
+                    ACTIVE
                   </span>
                 )}
               </div>
@@ -75,17 +75,17 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
               onClick={() => openInClaudeMutation.mutate()}
               className="rounded border border-orange-500/40 bg-orange-500/10 px-3.5 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20"
             >
-              Abrir no Claude
+              Open in Claude
             </button>
             {openInClaudeMutation.error && (
-              <p className="text-xs text-red-400">Erro: {commandErrorMessage(openInClaudeMutation.error)}</p>
+              <p className="text-xs text-red-400">Error: {commandErrorMessage(openInClaudeMutation.error)}</p>
             )}
           </div>
         </div>
       </header>
 
-      {isPending && <p className="p-7 text-sm text-neutral-400">Carregando…</p>}
-      {error && <p className="p-7 text-sm text-red-400">Erro ao carregar ambiente: {commandErrorMessage(error)}</p>}
+      {isPending && <p className="p-7 text-sm text-neutral-400">Loading…</p>}
+      {error && <p className="p-7 text-sm text-red-400">Error loading environment: {commandErrorMessage(error)}</p>}
 
       {data && (
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -112,7 +112,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
               <div className="grid grid-cols-1 gap-3 p-7 sm:grid-cols-3">
                 <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
                   <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-                    Plugins ativos
+                    Active plugins
                   </p>
                   <p className="text-2xl font-bold text-neutral-100">{pluginCount}</p>
                 </div>

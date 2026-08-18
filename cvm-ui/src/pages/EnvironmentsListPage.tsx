@@ -20,10 +20,10 @@ export function EnvironmentsListPage({ onSelect }: Props) {
   return (
     <div className="p-7">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-bold tracking-tight text-neutral-100">Ambientes</h1>
+        <h1 className="text-lg font-bold tracking-tight text-neutral-100">Environments</h1>
         {data && data.length > 0 && (
           <p className="text-xs text-neutral-500">
-            <span className="font-semibold text-orange-400">{activeCount}</span> de {data.length} ativos
+            <span className="font-semibold text-orange-400">{activeCount}</span> of {data.length} active
           </p>
         )}
       </div>
@@ -36,19 +36,19 @@ export function EnvironmentsListPage({ onSelect }: Props) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar ambientes…"
+            placeholder="Search environments…"
             className="w-full rounded border border-neutral-800 bg-neutral-900 py-1.5 pl-8 pr-3 text-xs text-neutral-100 outline-none focus:border-neutral-600"
           />
         </div>
       </div>
 
-      {isPending && <p className="text-sm text-neutral-400">Carregando ambientes…</p>}
-      {error && <p className="text-sm text-red-400">Erro ao listar ambientes: {commandErrorMessage(error)}</p>}
+      {isPending && <p className="text-sm text-neutral-400">Loading environments…</p>}
+      {error && <p className="text-sm text-red-400">Error listing environments: {commandErrorMessage(error)}</p>}
       {data && data.length === 0 && (
-        <p className="text-sm text-neutral-400">Nenhum ambiente encontrado. Crie um com o botão "+" na barra lateral.</p>
+        <p className="text-sm text-neutral-400">No environments found. Create one with the "+" button in the sidebar.</p>
       )}
       {data && data.length > 0 && filtered.length === 0 && (
-        <p className="text-sm text-neutral-400">Nenhum ambiente corresponde à busca.</p>
+        <p className="text-sm text-neutral-400">No environments match your search.</p>
       )}
 
       {filtered.length > 0 && (
@@ -69,7 +69,7 @@ export function EnvironmentsListPage({ onSelect }: Props) {
                     env.active ? "text-emerald-400" : "text-neutral-500"
                   }`}
                 >
-                  {env.active ? "ATIVO" : "INATIVO"}
+                  {env.active ? "ACTIVE" : "INACTIVE"}
                 </span>
               </div>
               <p className="mb-0.5 text-sm font-semibold text-neutral-100">{env.name}</p>
@@ -79,7 +79,7 @@ export function EnvironmentsListPage({ onSelect }: Props) {
                   onClick={() => onSelect(env.name)}
                   className="rounded border border-orange-500/40 px-3 py-1 text-xs font-medium text-orange-400 hover:bg-orange-500/10"
                 >
-                  Abrir
+                  Open
                 </button>
               </div>
             </div>
