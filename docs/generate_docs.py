@@ -235,6 +235,34 @@ write(
 <p>Export/import only touch <code>settings.json</code> (permissions + mcpServers), skill <em>names</em>, and <code>.env</code> <em>keys</em>. Credentials, history, and <code>.env</code> values are never read into the manifest.</p>
 """,
     prev=("getting-started.html", "Getting started"),
+    nxt=("gui.html", "Desktop GUI"),
+)
+
+write(
+    "gui.html",
+    "gui",
+    0,
+    "Desktop GUI",
+    "Start here",
+    "Desktop GUI (cvm-ui)",
+    "A visual layer over the same environments the CLI manages - no separate state, no separate format.",
+    """
+<p><code>cvm-ui</code> is a Tauri desktop app for browsing and editing environments without a terminal. It reads and writes the exact same <code>~/.cvm/envs/&lt;name&gt;</code> directories as the CLI, so switching between the two at any point is safe.</p>
+<h2>Opening it</h2>
+<pre><code>cvm launch</code></pre>
+<p>The first run downloads the matching <code>cvm-ui</code> release asset into <code>~/.cvm/bin/</code> and launches it; later runs just launch the already-installed binary.</p>
+<div style="border-radius: 10px; overflow: hidden; border: 1px solid var(--c-border); margin: 24px 0;">
+  <img src="../assets/screenshot-environments.png" alt="cvm-ui showing the environments list" style="display: block; width: 100%; height: auto;" />
+</div>
+<h2>What's in it</h2>
+<ul>
+  <li><strong>Environments</strong> - the list above, plus a detail view per environment with tabs for MCP Servers, Env Vars, Skills &amp; Agents, Configuration, and Account.</li>
+  <li><strong>Hooks</strong> - a global editor for the same <code>~/.cvm/hooks/</code> scripts described in the <a href="concepts.html">Core concepts</a> lifecycle hooks section.</li>
+  <li><strong>Settings</strong> - app version, the on-disk paths cvm uses, and a check-for-updates/update-now action that downloads and swaps the running <code>cvm-ui</code> binary in place.</li>
+</ul>
+<div class="callout">Everything the GUI does is backed by the same <code>cvm-core</code> logic as the CLI - there is no GUI-only state to keep in sync.</div>
+""",
+    prev=("concepts.html", "Core concepts"),
     nxt=("commands.html", "Command reference"),
 )
 
@@ -284,7 +312,7 @@ write(
 </ul>
 <div class="callout warn"><strong>macOS note:</strong> credentials may live in the Keychain. If there is no <code>.credentials.json</code> file, create still succeeds but you may need to log in once per environment.</div>
 """,
-    prev=("concepts.html", "Core concepts"),
+    prev=("gui.html", "Desktop GUI"),
     nxt=("examples.html", "Examples"),
 )
 

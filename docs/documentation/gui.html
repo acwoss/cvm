@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <script src="../assets/newrelic.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desktop GUI — cvm docs</title>
+  <meta name="description" content="cvm-ui is a Tauri desktop app for browsing and editing cvm environments without a terminal." />
+  <link rel="canonical" href="https://getcvm.com/documentation/gui.html" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="cvm docs" />
+  <meta property="og:title" content="Desktop GUI — cvm docs" />
+  <meta property="og:description" content="cvm-ui is a Tauri desktop app for browsing and editing cvm environments without a terminal." />
+  <meta property="og:url" content="https://getcvm.com/documentation/gui.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Desktop GUI — cvm docs" />
+  <meta name="twitter:description" content="cvm-ui is a Tauri desktop app for browsing and editing cvm environments without a terminal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/docs.css" />
+</head>
+<body data-page="gui" data-depth="0">
+  <header class="docs-topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">Menu</button>
+    <a class="docs-brand" id="link-home" href="../index.html">
+      <span class="docs-brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="8" width="14" height="10" rx="2" />
+          <circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none" />
+          <line x1="9" y1="16.5" x2="15" y2="16.5" stroke-width="1.5" />
+          <line x1="12" y1="8" x2="12" y2="5" />
+          <circle cx="12" cy="4.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      cvm
+    </a>
+    <div class="docs-topbar-sep"></div>
+    <span class="docs-topbar-label">Documentation</span>
+    <div class="docs-topbar-spacer"></div>
+    <a class="docs-topbar-link" id="link-github" href="https://github.com/acwoss/cvm">GitHub</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme"><span class="theme-toggle-thumb"></span></button>
+  </header>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" id="docs-sidebar"></aside>
+    <main class="docs-main">
+      <div class="docs-kicker">Start here</div>
+      <h1>Desktop GUI (cvm-ui)</h1>
+      <p class="docs-lead">A visual layer over the same environments the CLI manages - no separate state, no separate format.</p>
+
+<p><code>cvm-ui</code> is a Tauri desktop app for browsing and editing environments without a terminal. It reads and writes the exact same <code>~/.cvm/envs/&lt;name&gt;</code> directories as the CLI, so switching between the two at any point is safe.</p>
+<h2>Opening it</h2>
+<pre><code>cvm launch</code></pre>
+<p>The first run downloads the matching <code>cvm-ui</code> release asset into <code>~/.cvm/bin/</code> and launches it; later runs just launch the already-installed binary.</p>
+<div style="border-radius: 10px; overflow: hidden; border: 1px solid var(--c-border); margin: 24px 0;">
+  <img src="../assets/screenshot-environments.png" alt="cvm-ui showing the environments list" style="display: block; width: 100%; height: auto;" />
+</div>
+<h2>What's in it</h2>
+<ul>
+  <li><strong>Environments</strong> - the list above, plus a detail view per environment with tabs for MCP Servers, Env Vars, Skills &amp; Agents, Configuration, and Account.</li>
+  <li><strong>Hooks</strong> - a global editor for the same <code>~/.cvm/hooks/</code> scripts described in the <a href="concepts.html">Core concepts</a> lifecycle hooks section.</li>
+  <li><strong>Settings</strong> - app version, the on-disk paths cvm uses, and a check-for-updates/update-now action that downloads and swaps the running <code>cvm-ui</code> binary in place.</li>
+</ul>
+<div class="callout">Everything the GUI does is backed by the same <code>cvm-core</code> logic as the CLI - there is no GUI-only state to keep in sync.</div>
+
+      <div class="docs-pager">
+        <a href="concepts.html"><span class="label">Previous</span><span class="title">Core concepts</span></a>
+        <a class="next" href="commands.html"><span class="label">Next</span><span class="title">Command reference</span></a>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/docs.js"></script>
+</body>
+</html>

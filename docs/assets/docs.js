@@ -6,6 +6,7 @@
         { href: "index.html", label: "Overview", id: "overview" },
         { href: "getting-started.html", label: "Getting started", id: "getting-started" },
         { href: "concepts.html", label: "Core concepts", id: "concepts" },
+        { href: "gui.html", label: "Desktop GUI", id: "gui" },
       ],
     },
     {
