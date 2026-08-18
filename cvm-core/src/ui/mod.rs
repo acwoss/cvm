@@ -3,6 +3,7 @@ mod claude_md;
 mod config;
 mod hooks;
 mod marketplaces;
+mod plugin_source;
 mod skill_editor;
 mod skills;
 mod summary;
@@ -15,6 +16,7 @@ pub use config::{
 };
 pub use hooks::{delete_hook, list_hooks, read_hook, set_hook_enabled, write_hook, HookSummary};
 pub use marketplaces::{list_marketplaces, MarketplaceInfo, PluginInfo};
+pub use plugin_source::ItemSource;
 pub use skill_editor::{
     create_agent, create_skill, delete_agent, delete_skill, read_agent_content, read_skill_content,
     write_agent_content, write_skill_content, SkillContent,
