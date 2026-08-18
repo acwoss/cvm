@@ -7,9 +7,10 @@ import { ClaudeMdTab } from "./tabs/ClaudeMdTab";
 import { ConfigTab } from "./tabs/ConfigTab";
 import { EnvVarsTab } from "./tabs/EnvVarsTab";
 import { MarketplacesTab } from "./tabs/MarketplacesTab";
+import { McpServersTab } from "./tabs/McpServersTab";
 import { SkillsAgentsTab } from "./tabs/SkillsAgentsTab";
 
-const TABS = ["overview", "claudeMd", "marketplaces", "envvars", "skills", "config", "account"] as const;
+const TABS = ["overview", "claudeMd", "marketplaces", "mcp", "envvars", "skills", "config", "account"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Props {
@@ -38,13 +39,15 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
   }
 
   const pluginCount = data?.marketplaces.flatMap((m) => m.plugins).filter((p) => p.installed).length ?? 0;
+  const mcpServersCount = data?.mcpServers.length ?? 0;
   const skillsAgentsCount = (data?.skills.length ?? 0) + (data?.agents.length ?? 0);
   const envVarsCount = data?.envVars.length ?? 0;
 
   const tabLabels: Record<Tab, string> = {
     overview: "Overview",
     claudeMd: "CLAUDE.md",
-    marketplaces: `MCP Servers (${pluginCount})`,
+    marketplaces: `Marketplaces & Plugins (${pluginCount})`,
+    mcp: `MCP Servers (${mcpServersCount})`,
     envvars: `Env Vars (${envVarsCount})`,
     skills: `Skills & Agents (${skillsAgentsCount})`,
     config: "Configuration",
@@ -136,6 +139,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
             {tab === "config" && <ConfigTab config={data.config} envName={name} onRemoved={onBack} />}
             {tab === "envvars" && <EnvVarsTab envName={name} envVars={data.envVars} />}
             {tab === "marketplaces" && <MarketplacesTab envName={name} marketplaces={data.marketplaces} />}
+            {tab === "mcp" && <McpServersTab mcpServers={data.mcpServers} />}
             {tab === "skills" && (
               <SkillsAgentsTab
                 envName={name}
