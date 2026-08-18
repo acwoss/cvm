@@ -83,7 +83,7 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
       </div>
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Outras chaves (settings.json)</h3>
-        <pre className="overflow-x-auto rounded bg-neutral-900 p-3 text-xs text-neutral-400">
+        <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-neutral-900 p-3 text-xs text-neutral-400">
           {JSON.stringify(config.other, null, 2)}
         </pre>
       </section>
