@@ -30,18 +30,23 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex h-screen w-screen overflow-hidden bg-neutral-950 text-neutral-100">
-        <Sidebar active={navPage} onNav={handleNav} onQuickCreate={handleQuickCreate} />
-        <main className="min-w-0 flex-1 overflow-y-auto">
-          {navPage === "hooks" && <HooksPage onBack={() => handleNav("environments")} />}
-          {navPage === "settings" && <SettingsPage onBack={() => handleNav("environments")} />}
-          {navPage === "environments" &&
-            (selected === null ? (
-              <EnvironmentsListPage onSelect={setSelected} />
-            ) : (
-              <EnvironmentDetailPage name={selected} onBack={() => setSelected(null)} />
-            ))}
-        </main>
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-neutral-950 text-neutral-100">
+        <div className="flex min-h-0 flex-1">
+          <Sidebar active={navPage} onNav={handleNav} onQuickCreate={handleQuickCreate} />
+          <main className="min-w-0 flex-1 overflow-y-auto">
+            {navPage === "hooks" && <HooksPage onBack={() => handleNav("environments")} />}
+            {navPage === "settings" && <SettingsPage onBack={() => handleNav("environments")} />}
+            {navPage === "environments" &&
+              (selected === null ? (
+                <EnvironmentsListPage onSelect={setSelected} />
+              ) : (
+                <EnvironmentDetailPage name={selected} onBack={() => setSelected(null)} />
+              ))}
+          </main>
+        </div>
+        <footer className="flex-shrink-0 border-t border-[#1E2028] bg-[#0D0F11] py-1.5 text-center text-[11px] text-neutral-600">
+          Created by Anderson Carlos Woss
+        </footer>
       </div>
       {showCreate && navPage === "environments" && selected === null && (
         <CreateEnvironmentDialog onClose={() => setShowCreate(false)} />
