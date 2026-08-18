@@ -105,6 +105,13 @@ export function EnvVarsTab({ envName, envVars }: Props) {
         </button>
       </div>
 
+      <p className="mb-4 rounded border border-amber-900/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-400">
+        Estas variáveis são carregadas no processo do Claude Code, mas um MCP server só recebe uma
+        delas se ela estiver referenciada explicitamente no bloco <code>env</code> da configuração
+        desse servidor (aba MCP Servers). Definir a variável aqui não garante que um MCP server a
+        receba.
+      </p>
+
       {showForm && (
         <div className="mb-4 rounded border border-neutral-700 bg-neutral-900 p-4">
           <div className="mb-3 grid grid-cols-2 gap-3">
