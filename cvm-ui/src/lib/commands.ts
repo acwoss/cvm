@@ -37,11 +37,22 @@ export interface MarketplaceInfo {
   plugins: PluginInfo[];
 }
 
+export type ItemSource = { kind: "native" } | { kind: "plugin"; marketplace: string; plugin: string };
+
+export interface McpServerInfo {
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, string> | null;
+  source: ItemSource;
+}
+
 export interface SkillOrAgentInfo {
   id: string;
   name: string;
   description: string;
   builtIn: boolean;
+  source: ItemSource;
 }
 
 export type AuthMethod = "oauth" | "apiKey";
@@ -72,6 +83,7 @@ export interface EnvironmentDetail {
   config: ConfigSection;
   envVars: EnvVarSummary[];
   marketplaces: MarketplaceInfo[];
+  mcpServers: McpServerInfo[];
   skills: SkillOrAgentInfo[];
   agents: SkillOrAgentInfo[];
   account: AccountInfo | null;
