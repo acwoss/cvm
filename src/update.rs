@@ -34,7 +34,15 @@ pub fn run() -> Result<UpdateOutcome> {
     let latest_tag = fetch_latest_tag()?;
     let latest = latest_tag.trim_start_matches('v');
 
-    if latest == current {
+    // Only ever move forward - if the "latest" release is the same as or
+    // older than what's running (e.g. a stale/out-of-order GitHub release),
+    // treat it as already up to date instead of "updating" to an older
+    // version.
+    let is_newer = match (semver::Version::parse(latest), semver::Version::parse(current)) {
+        (Ok(latest_ver), Ok(current_ver)) => latest_ver > current_ver,
+        _ => latest != current,
+    };
+    if !is_newer {
         return Ok(UpdateOutcome::AlreadyUpToDate {
             version: current.to_string(),
         });
