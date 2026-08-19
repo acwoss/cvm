@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { SearchIcon } from "../components/Icons";
+import { BotIcon, PackageIcon, SearchIcon } from "../components/Icons";
 import { commandErrorMessage, listEnvironments } from "../lib/commands";
 
 interface Props {
@@ -53,8 +53,26 @@ export function EnvironmentsListPage({ onSelect }: Props) {
               onClick={() => onSelect(env.name)}
               className="cursor-pointer rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 transition-colors hover:border-orange-500/60 hover:bg-orange-500/10"
             >
-              <p className="mb-0.5 text-sm font-semibold text-neutral-100">{env.name}</p>
-              <p className="mb-3 truncate font-mono text-xs text-neutral-500">{env.path}</p>
+              <div className="mb-0.5 flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-semibold text-neutral-100">{env.name}</p>
+                {env.account?.authMethod === "oauth" && (
+                  <span className="shrink-0 rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300">
+                    {env.account.displayName ?? env.account.email}
+                  </span>
+                )}
+              </div>
+              <p className="mb-2 truncate font-mono text-xs text-neutral-500">{env.path}</p>
+              {env.description && (
+                <p className="mb-3 truncate text-xs text-neutral-400">{env.description}</p>
+              )}
+              <div className="mb-3 flex items-center gap-4 text-xs text-neutral-500">
+                <span className="flex items-center gap-1" title="Active plugins">
+                  <PackageIcon size={13} /> {env.pluginCount}
+                </span>
+                <span className="flex items-center gap-1" title="Skills & Agents">
+                  <BotIcon size={13} /> {env.skillsAgentsCount}
+                </span>
+              </div>
               <div className="flex justify-end">
                 <button
                   onClick={(e) => {

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { checkAuthStatus, commandErrorMessage } from "../../lib/commands";
+import { checkAuthStatus, commandErrorMessage, loginInClaude } from "../../lib/commands";
 import type { AccountInfo } from "../../lib/commands";
 
 interface Props {
@@ -15,6 +15,10 @@ export function AccountTab({ envName, account }: Props) {
   const statusMutation = useMutation({
     mutationFn: () => checkAuthStatus(envName),
   });
+  const loginMutation = useMutation({
+    mutationFn: () => loginInClaude(envName),
+  });
+  const showLoginButton = !account || statusMutation.data?.loggedIn === false;
 
   return (
     <div className="space-y-6 p-7 text-sm">
@@ -46,6 +50,24 @@ export function AccountTab({ envName, account }: Props) {
       )}
 
       <div className="border-t border-neutral-800 pt-4">
+        {showLoginButton && (
+          <div className="mb-3">
+            <button
+              onClick={() => loginMutation.mutate()}
+              disabled={loginMutation.isPending}
+              className="rounded border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20 disabled:opacity-50"
+            >
+              {loginMutation.isPending ? "Opening terminal…" : "Login"}
+            </button>
+            <p className="mt-1 text-xs text-neutral-500">
+              Opens a terminal running <code className="font-mono">claude auth login</code> for this
+              environment. Use "Check status" above afterwards to confirm.
+            </p>
+            {loginMutation.error && (
+              <p className="mt-2 text-xs text-red-400">Error: {commandErrorMessage(loginMutation.error)}</p>
+            )}
+          </div>
+        )}
         <button
           onClick={() => statusMutation.mutate()}
           disabled={statusMutation.isPending}

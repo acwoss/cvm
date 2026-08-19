@@ -1,15 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export interface EnvironmentSummary {
-  name: string;
-  path: string;
-  active: boolean;
-}
-
-export function listEnvironments(): Promise<EnvironmentSummary[]> {
-  return invoke("list_environments");
-}
-
 export type EnvVarSource = "dotenv" | "settings";
 
 export interface EnvVarSummary {
@@ -20,6 +10,7 @@ export interface EnvVarSummary {
 export interface ConfigSection {
   allowedTools: string[];
   deniedTools: string[];
+  description: string | null;
   other: unknown;
 }
 
@@ -65,6 +56,20 @@ export interface AccountInfo {
   seatTier: string | null;
 }
 
+export interface EnvironmentSummary {
+  name: string;
+  path: string;
+  active: boolean;
+  description: string | null;
+  pluginCount: number;
+  skillsAgentsCount: number;
+  account: AccountInfo | null;
+}
+
+export function listEnvironments(): Promise<EnvironmentSummary[]> {
+  return invoke("list_environments");
+}
+
 export interface AuthStatus {
   loggedIn: boolean;
   authMethod: string;
@@ -102,6 +107,10 @@ export function openInClaude(name: string, directory?: string): Promise<void> {
   return invoke("open_in_claude", { name, directory: directory ?? null });
 }
 
+export function loginInClaude(name: string): Promise<void> {
+  return invoke("login_in_claude", { name });
+}
+
 export function checkAuthStatus(name: string): Promise<AuthStatus> {
   return invoke("check_auth_status", { name });
 }
@@ -135,8 +144,9 @@ export function writeConfigSection(
   name: string,
   allowedTools: string[],
   deniedTools: string[],
+  description: string | null,
 ): Promise<void> {
-  return invoke("write_config_section", { name, allowedTools, deniedTools });
+  return invoke("write_config_section", { name, allowedTools, deniedTools, description });
 }
 
 export function writeEnvVar(

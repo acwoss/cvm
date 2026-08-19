@@ -376,13 +376,29 @@ pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
 /// directory-picker to control it. `None` leaves the terminal emulator's own
 /// default (typically the user's home directory).
 pub fn open_env_detached(name: &str, working_dir: Option<&Path>) -> Result<()> {
+    open_env_detached_with_args(name, working_dir, &[])
+}
+
+/// Como `open_env_detached`, mas roda `claude auth login` em vez de `claude`
+/// puro - para o botão de Login da aba Account da UI autenticar um
+/// ambiente anônimo ou deslogado sem travar a UI esperando o fluxo OAuth
+/// interativo (que abre navegador e/ou pede confirmação de código).
+pub fn login_env_detached(name: &str) -> Result<()> {
+    open_env_detached_with_args(name, None, &["auth", "login"])
+}
+
+fn open_env_detached_with_args(
+    name: &str,
+    working_dir: Option<&Path>,
+    extra_args: &[&str],
+) -> Result<()> {
     let dir = ensure_env_exists(name)?;
     ensure_env_bin(&dir)?;
     let env_vars = load_env_file(&dir)?;
 
     #[cfg(target_os = "macos")]
     {
-        return open_via_macos_terminal(&dir, name, &env_vars, working_dir);
+        return open_via_macos_terminal(&dir, name, &env_vars, working_dir, extra_args);
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -390,7 +406,7 @@ pub fn open_env_detached(name: &str, working_dir: Option<&Path>) -> Result<()> {
         let mut paths = vec![env_bin_dir(&dir)];
         paths.extend(env::split_paths(&env::var_os("PATH").unwrap_or_default()));
         let path = env::join_paths(paths).context("failed to prepend environment bin to PATH")?;
-        let mut cmd = terminal_command()?;
+        let mut cmd = terminal_command(extra_args)?;
         cmd.envs(env_vars)
             .env(CONFIG_DIR_VAR, &dir)
             .env(ACTIVE_ENV_VAR, name)
@@ -422,7 +438,7 @@ pub fn open_env_detached(name: &str, working_dir: Option<&Path>) -> Result<()> {
 /// since the actual env vars are applied to the returned `Command` itself
 /// via `Command::envs`/`Command::env` by the caller.
 #[cfg(target_os = "linux")]
-fn terminal_command() -> Result<Command> {
+fn terminal_command(extra_args: &[&str]) -> Result<Command> {
     const CANDIDATES: &[&str] = &[
         "x-terminal-emulator",
         "gnome-terminal",
@@ -439,6 +455,7 @@ fn terminal_command() -> Result<Command> {
             } else {
                 cmd.arg("-e").arg("claude");
             }
+            cmd.args(extra_args);
             return Ok(cmd);
         }
     }
@@ -460,9 +477,10 @@ fn is_on_path(program: &str) -> bool {
 /// before spawning, so this needs no string interpolation of the
 /// environment name or any path into a command string either.
 #[cfg(target_os = "windows")]
-fn terminal_command() -> Result<Command> {
+fn terminal_command(extra_args: &[&str]) -> Result<Command> {
     let mut cmd = Command::new("cmd");
     cmd.args(["/C", "start", "", "cmd", "/K", "claude"]);
+    cmd.args(extra_args);
     Ok(cmd)
 }
 
@@ -486,6 +504,7 @@ fn open_via_macos_terminal(
     env_name: &str,
     env_vars: &[(String, String)],
     working_dir: Option<&Path>,
+    extra_args: &[&str],
 ) -> Result<()> {
     let mut script = String::from("#!/bin/sh\n");
     for (key, value) in env_vars {
@@ -507,7 +526,12 @@ fn open_via_macos_terminal(
             shell_single_quote(&cwd.display().to_string())
         ));
     }
-    script.push_str("rm -f \"$0\"\nexec claude\n");
+    script.push_str("rm -f \"$0\"\nexec claude");
+    for arg in extra_args {
+        script.push(' ');
+        script.push_str(&shell_single_quote(arg));
+    }
+    script.push('\n');
 
     let script_path =
         env::temp_dir().join(format!("cvm-open-{env_name}-{}.sh", std::process::id()));
@@ -1258,6 +1282,46 @@ mod tests {
             assert!(captured.contains("-e claude") || captured.contains("claude"));
             assert!(captured.contains(&env_dir("work").unwrap().display().to_string()));
             assert!(captured.contains("work"));
+
+            // SAFETY: guardado por HOME_LOCK.
+            unsafe {
+                env::set_var("PATH", old_path);
+            }
+        });
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn login_env_detached_launches_terminal_running_claude_auth_login() {
+        with_temp_home(|home| {
+            create_env("work", true, false).unwrap();
+
+            let fake_bin_dir = home.join("fake-bin");
+            fs::create_dir_all(&fake_bin_dir).unwrap();
+            let capture_file = home.join("terminal-invocation.txt");
+            let fake_terminal = fake_bin_dir.join("x-terminal-emulator");
+            fs::write(
+                &fake_terminal,
+                format!(
+                    "#!/bin/sh\necho \"args:$@\" > {}\n",
+                    capture_file.display()
+                ),
+            )
+            .unwrap();
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&fake_terminal, fs::Permissions::from_mode(0o755)).unwrap();
+
+            let old_path = env::var("PATH").unwrap_or_default();
+            // SAFETY: guardado por HOME_LOCK (mantido por with_temp_home).
+            unsafe {
+                env::set_var("PATH", format!("{}:{}", fake_bin_dir.display(), old_path));
+            }
+
+            login_env_detached("work").unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(200));
+
+            let captured = fs::read_to_string(&capture_file).unwrap();
+            assert!(captured.contains("claude auth login"));
 
             // SAFETY: guardado por HOME_LOCK.
             unsafe {

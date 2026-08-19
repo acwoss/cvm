@@ -53,6 +53,11 @@ pub fn open_in_claude(name: String, directory: Option<String>) -> Result<(), Com
 }
 
 #[tauri::command]
+pub fn login_in_claude(name: String) -> Result<(), CommandError> {
+    Ok(env::login_env_detached(&name)?)
+}
+
+#[tauri::command]
 pub fn create_environment(
     name: String,
     anonymous: bool,
@@ -77,9 +82,10 @@ pub fn write_config_section(
     name: String,
     allowed_tools: Vec<String>,
     denied_tools: Vec<String>,
+    description: Option<String>,
 ) -> Result<(), CommandError> {
     let dir = env::ensure_env_exists(&name)?;
-    ui::write_config_section(&dir, &allowed_tools, &denied_tools)?;
+    ui::write_config_section(&dir, &allowed_tools, &denied_tools, description.as_deref())?;
     Ok(())
 }
 
