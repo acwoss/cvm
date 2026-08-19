@@ -13,6 +13,7 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
   const queryClient = useQueryClient();
   const [allowedTools, setAllowedTools] = useState(config.allowedTools.join("\n"));
   const [deniedTools, setDeniedTools] = useState(config.deniedTools.join("\n"));
+  const [description, setDescription] = useState(config.description ?? "");
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -26,9 +27,11 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
           .split("\n")
           .map((t) => t.trim())
           .filter(Boolean),
+        description.trim() || null,
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["environment-detail", envName] });
+      queryClient.invalidateQueries({ queryKey: ["environments"] });
     },
   });
 
@@ -48,6 +51,16 @@ export function ConfigTab({ config, envName, onRemoved }: Props) {
 
   return (
     <div className="space-y-4 p-6 text-sm">
+      <section>
+        <h3 className="mb-1 font-medium text-neutral-200">Description</h3>
+        <p className="mb-2 text-xs text-neutral-500">Shown on this environment's card in the list.</p>
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What is this environment for?"
+          className="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-xs text-neutral-100 outline-none focus:border-neutral-500"
+        />
+      </section>
       <section>
         <h3 className="mb-1 font-medium text-neutral-200">Allowed tools</h3>
         <p className="mb-2 text-xs text-neutral-500">One tool per line.</p>
