@@ -211,7 +211,10 @@ pub fn check_for_update(
         },
     };
     let latest = latest_tag.trim_start_matches('v');
-    match (semver::Version::parse(latest), semver::Version::parse(current)) {
+    match (
+        semver::Version::parse(latest),
+        semver::Version::parse(current),
+    ) {
         // Only ever suggest moving forward - a stale/out-of-order cache
         // entry (or a release published behind an already-newer one)
         // must never be reported as an "update" to an older version.

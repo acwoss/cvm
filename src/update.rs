@@ -38,7 +38,10 @@ pub fn run() -> Result<UpdateOutcome> {
     // older than what's running (e.g. a stale/out-of-order GitHub release),
     // treat it as already up to date instead of "updating" to an older
     // version.
-    let is_newer = match (semver::Version::parse(latest), semver::Version::parse(current)) {
+    let is_newer = match (
+        semver::Version::parse(latest),
+        semver::Version::parse(current),
+    ) {
         (Ok(latest_ver), Ok(current_ver)) => latest_ver > current_ver,
         _ => latest != current,
     };
