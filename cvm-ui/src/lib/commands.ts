@@ -98,8 +98,8 @@ export function revealEnvVar(name: string, source: EnvVarSource, key: string): P
   return invoke("reveal_env_var", { name, source, key });
 }
 
-export function openInClaude(name: string): Promise<void> {
-  return invoke("open_in_claude", { name });
+export function openInClaude(name: string, directory?: string): Promise<void> {
+  return invoke("open_in_claude", { name, directory: directory ?? null });
 }
 
 export function checkAuthStatus(name: string): Promise<AuthStatus> {

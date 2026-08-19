@@ -47,8 +47,9 @@ pub fn reveal_env_var(
 }
 
 #[tauri::command]
-pub fn open_in_claude(name: String) -> Result<(), CommandError> {
-    Ok(env::open_env_detached(&name)?)
+pub fn open_in_claude(name: String, directory: Option<String>) -> Result<(), CommandError> {
+    let working_dir = directory.map(std::path::PathBuf::from);
+    Ok(env::open_env_detached(&name, working_dir.as_deref())?)
 }
 
 #[tauri::command]
@@ -60,7 +61,7 @@ pub fn create_environment(
 ) -> Result<(), CommandError> {
     env::create_env(&name, anonymous, inherit)?;
     if open {
-        env::open_env_detached(&name)?;
+        env::open_env_detached(&name, None)?;
     }
     Ok(())
 }

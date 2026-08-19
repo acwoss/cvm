@@ -368,14 +368,21 @@ pub fn run_in_env(name: &str, command: &[String]) -> Result<i32> {
 /// only works when the caller (e.g. the cvm-ui desktop app) happens to have
 /// inherited a real controlling terminal, which is not guaranteed (e.g. when
 /// launched from a desktop icon).
-pub fn open_env_detached(name: &str) -> Result<()> {
+///
+/// `working_dir`, when given, is the directory `claude` should run in - the
+/// new terminal window has no notion of a "caller's cwd" to inherit (unlike
+/// the CLI's blocking `open_env`, which just runs `claude` as a child of the
+/// invoking shell), so this is the only way for a caller like the GUI's
+/// directory-picker to control it. `None` leaves the terminal emulator's own
+/// default (typically the user's home directory).
+pub fn open_env_detached(name: &str, working_dir: Option<&Path>) -> Result<()> {
     let dir = ensure_env_exists(name)?;
     ensure_env_bin(&dir)?;
     let env_vars = load_env_file(&dir)?;
 
     #[cfg(target_os = "macos")]
     {
-        return open_via_macos_terminal(&dir, name, &env_vars);
+        return open_via_macos_terminal(&dir, name, &env_vars, working_dir);
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -397,6 +404,9 @@ pub fn open_env_detached(name: &str) -> Result<()> {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
+        if let Some(cwd) = working_dir {
+            cmd.current_dir(cwd);
+        }
         cmd.spawn()
             .context("failed to launch a terminal for 'claude'")?;
         Ok(())
@@ -475,6 +485,7 @@ fn open_via_macos_terminal(
     claude_dir: &Path,
     env_name: &str,
     env_vars: &[(String, String)],
+    working_dir: Option<&Path>,
 ) -> Result<()> {
     let mut script = String::from("#!/bin/sh\n");
     for (key, value) in env_vars {
@@ -490,6 +501,12 @@ fn open_via_macos_terminal(
         ACTIVE_ENV_VAR,
         shell_single_quote(env_name)
     ));
+    if let Some(cwd) = working_dir {
+        script.push_str(&format!(
+            "cd {} || exit 1\n",
+            shell_single_quote(&cwd.display().to_string())
+        ));
+    }
     script.push_str("rm -f \"$0\"\nexec claude\n");
 
     let script_path =
@@ -1190,7 +1207,7 @@ mod tests {
             };
 
             let start = std::time::Instant::now();
-            open_env_detached("work").unwrap();
+            open_env_detached("work", None).unwrap();
 
             assert!(
                 start.elapsed().as_secs() < 5,
@@ -1233,7 +1250,7 @@ mod tests {
                 env::set_var("PATH", format!("{}:{}", fake_bin_dir.display(), old_path));
             }
 
-            open_env_detached("work").unwrap();
+            open_env_detached("work", None).unwrap();
             // Give the spawned (non-waited-on) child a moment to write its capture file.
             std::thread::sleep(std::time::Duration::from_millis(200));
 

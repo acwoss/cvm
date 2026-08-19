@@ -1,6 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { commandErrorMessage, getEnvironmentDetail, openInClaude } from "../lib/commands";
+import { commandErrorMessage, getEnvironmentDetail } from "../lib/commands";
+import { OpenInClaudeDialog } from "../components/OpenInClaudeDialog";
 import { SkillEditor } from "../components/SkillEditor";
 import { AccountTab } from "./tabs/AccountTab";
 import { ClaudeMdTab } from "./tabs/ClaudeMdTab";
@@ -21,11 +22,11 @@ interface Props {
 export function EnvironmentDetailPage({ name, onBack }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [editing, setEditing] = useState<{ kind: "skill" | "agent"; id: string } | null>(null);
+  const [openingInClaude, setOpeningInClaude] = useState(false);
   const { data, isPending, error } = useQuery({
     queryKey: ["environment-detail", name],
     queryFn: () => getEnvironmentDetail(name),
   });
-  const openInClaudeMutation = useMutation({ mutationFn: () => openInClaude(name) });
 
   if (editing) {
     return (
@@ -77,14 +78,11 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
           </div>
           <div className="flex flex-col items-end gap-1">
             <button
-              onClick={() => openInClaudeMutation.mutate()}
+              onClick={() => setOpeningInClaude(true)}
               className="rounded border border-orange-500/40 bg-orange-500/10 px-3.5 py-1.5 text-xs font-semibold text-orange-400 hover:bg-orange-500/20"
             >
               Open in Claude
             </button>
-            {openInClaudeMutation.error && (
-              <p className="text-xs text-red-400">Error: {commandErrorMessage(openInClaudeMutation.error)}</p>
-            )}
           </div>
         </div>
       </header>
@@ -152,6 +150,7 @@ export function EnvironmentDetailPage({ name, onBack }: Props) {
           </div>
         </div>
       )}
+      {openingInClaude && <OpenInClaudeDialog envName={name} onClose={() => setOpeningInClaude(false)} />}
     </div>
   );
 }
