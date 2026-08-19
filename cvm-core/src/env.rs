@@ -1302,10 +1302,7 @@ mod tests {
             let fake_terminal = fake_bin_dir.join("x-terminal-emulator");
             fs::write(
                 &fake_terminal,
-                format!(
-                    "#!/bin/sh\necho \"args:$@\" > {}\n",
-                    capture_file.display()
-                ),
+                format!("#!/bin/sh\necho \"args:$@\" > {}\n", capture_file.display()),
             )
             .unwrap();
             use std::os::unix::fs::PermissionsExt;
