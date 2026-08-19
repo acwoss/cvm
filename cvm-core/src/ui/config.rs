@@ -12,6 +12,7 @@ use crate::env;
 pub struct ConfigSection {
     pub allowed_tools: Vec<String>,
     pub denied_tools: Vec<String>,
+    pub description: Option<String>,
     /// Todas as outras chaves de settings.json (enabledPlugins,
     /// extraKnownMarketplaces, pluginConfigs, theme, effortLevel, ...),
     /// expostas como estão para um visualizador JSON genérico. Ver
@@ -53,12 +54,16 @@ pub fn read_config_section(env_dir: &Path) -> Result<ConfigSection> {
         ),
         _ => (Vec::new(), Vec::new()),
     };
+    let description = obj
+        .remove("description")
+        .and_then(|v| v.as_str().map(str::to_string));
     obj.remove("mcpServers");
     obj.remove("env");
 
     Ok(ConfigSection {
         allowed_tools,
         denied_tools,
+        description,
         other: value,
     })
 }
@@ -148,6 +153,7 @@ pub fn write_config_section(
     env_dir: &Path,
     allowed_tools: &[String],
     denied_tools: &[String],
+    description: Option<&str>,
 ) -> Result<()> {
     modify_settings_json(env_dir, |obj| {
         let permissions_obj = obj
@@ -163,6 +169,14 @@ pub fn write_config_section(
             "deny".to_string(),
             serde_json::to_value(denied_tools).context("failed to serialize denied tools")?,
         );
+        match description {
+            Some(d) if !d.is_empty() => {
+                obj.insert("description".to_string(), Value::String(d.to_string()));
+            }
+            _ => {
+                obj.remove("description");
+            }
+        }
         Ok(())
     })
 }
@@ -322,6 +336,7 @@ mod tests {
             dir.path(),
             &["read-file".to_string(), "write-file".to_string()],
             &["exec".to_string()],
+            None,
         )
         .unwrap();
 
@@ -339,10 +354,61 @@ mod tests {
     fn write_config_section_creates_settings_json_when_missing() {
         let dir = tempfile::tempdir().unwrap();
 
-        write_config_section(dir.path(), &["read-file".to_string()], &[]).unwrap();
+        write_config_section(dir.path(), &["read-file".to_string()], &[], None).unwrap();
 
         let config = read_config_section(dir.path()).unwrap();
         assert_eq!(config.allowed_tools, vec!["read-file".to_string()]);
+    }
+
+    #[test]
+    fn read_config_section_extracts_description_and_strips_it_from_other() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("settings.json"),
+            r#"{"description":"Ambiente de testes","theme":"dark"}"#,
+        )
+        .unwrap();
+
+        let config = read_config_section(dir.path()).unwrap();
+
+        assert_eq!(config.description.as_deref(), Some("Ambiente de testes"));
+        assert!(config.other.get("description").is_none());
+        assert_eq!(config.other["theme"], "dark");
+    }
+
+    #[test]
+    fn read_config_section_description_defaults_to_none_when_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("settings.json"), r#"{"theme":"dark"}"#).unwrap();
+
+        let config = read_config_section(dir.path()).unwrap();
+
+        assert_eq!(config.description, None);
+    }
+
+    #[test]
+    fn write_config_section_sets_description() {
+        let dir = tempfile::tempdir().unwrap();
+
+        write_config_section(dir.path(), &[], &[], Some("Minha descrição")).unwrap();
+
+        let config = read_config_section(dir.path()).unwrap();
+        assert_eq!(config.description.as_deref(), Some("Minha descrição"));
+    }
+
+    #[test]
+    fn write_config_section_removes_description_when_none() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(
+            dir.path().join("settings.json"),
+            r#"{"description":"antiga"}"#,
+        )
+        .unwrap();
+
+        write_config_section(dir.path(), &[], &[], None).unwrap();
+
+        let config = read_config_section(dir.path()).unwrap();
+        assert_eq!(config.description, None);
     }
 
     #[test]
