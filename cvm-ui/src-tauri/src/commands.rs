@@ -77,9 +77,10 @@ pub fn write_config_section(
     name: String,
     allowed_tools: Vec<String>,
     denied_tools: Vec<String>,
+    description: Option<String>,
 ) -> Result<(), CommandError> {
     let dir = env::ensure_env_exists(&name)?;
-    ui::write_config_section(&dir, &allowed_tools, &denied_tools)?;
+    ui::write_config_section(&dir, &allowed_tools, &denied_tools, description.as_deref())?;
     Ok(())
 }
 
