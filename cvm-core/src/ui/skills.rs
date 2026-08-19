@@ -283,7 +283,10 @@ mod tests {
         write_plugin_skill_fixture(
             dir.path(),
             "example",
-            Some(("reviewer.md", "---\nname: reviewer\ndescription: From a plugin\n---\n")),
+            Some((
+                "reviewer.md",
+                "---\nname: reviewer\ndescription: From a plugin\n---\n",
+            )),
         );
 
         let agents = list_agents(dir.path()).unwrap();

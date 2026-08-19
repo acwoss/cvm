@@ -249,6 +249,9 @@ mod tests {
         assert_eq!(dirs.len(), 1);
         assert_eq!(dirs[0].marketplace, "acme");
         assert_eq!(dirs[0].plugin, "tool");
-        assert_eq!(dirs[0].path, dir.path().join("plugins/cache/acme/tool/1.2.3"));
+        assert_eq!(
+            dirs[0].path,
+            dir.path().join("plugins/cache/acme/tool/1.2.3")
+        );
     }
 }

@@ -23,7 +23,8 @@ pub struct McpServerInfo {
 }
 
 fn env_keys(env: Option<BTreeMap<String, String>>) -> Vec<String> {
-    env.map(|vars| vars.into_keys().collect()).unwrap_or_default()
+    env.map(|vars| vars.into_keys().collect())
+        .unwrap_or_default()
 }
 
 fn read_native_mcp_servers(env_dir: &Path) -> Result<BTreeMap<String, McpServer>> {
