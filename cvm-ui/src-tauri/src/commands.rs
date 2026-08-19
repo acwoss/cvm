@@ -53,6 +53,11 @@ pub fn open_in_claude(name: String, directory: Option<String>) -> Result<(), Com
 }
 
 #[tauri::command]
+pub fn login_in_claude(name: String) -> Result<(), CommandError> {
+    Ok(env::login_env_detached(&name)?)
+}
+
+#[tauri::command]
 pub fn create_environment(
     name: String,
     anonymous: bool,

@@ -20,6 +20,7 @@ pub fn run() {
             commands::check_auth_status,
             commands::reveal_env_var,
             commands::open_in_claude,
+            commands::login_in_claude,
             commands::create_environment,
             commands::remove_environment,
             commands::write_config_section,
