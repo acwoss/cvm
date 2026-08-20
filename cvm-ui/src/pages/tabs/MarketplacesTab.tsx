@@ -138,7 +138,7 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
       {marketplaces.length === 0 ? (
         <p className="text-neutral-400">No marketplaces installed.</p>
       ) : filteredMarketplaces.length === 0 ? (
-        <p className="text-neutral-400">No MCP servers match your search.</p>
+        <p className="text-neutral-400">No plugins match your search.</p>
       ) : (
         filteredMarketplaces.map((m) => (
           <section key={m.id}>
