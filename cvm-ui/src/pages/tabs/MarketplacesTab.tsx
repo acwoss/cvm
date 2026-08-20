@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { SearchIcon, SpinnerIcon, TrashIcon } from "../../components/Icons";
+import { ChevronIcon, SearchIcon, SpinnerIcon, TrashIcon } from "../../components/Icons";
 import type { MarketplaceInfo, PluginInfo } from "../../lib/commands";
 import {
   addMarketplace,
@@ -10,6 +10,7 @@ import {
   installPlugin,
   removeMarketplace,
   uninstallPlugin,
+  updateMarketplace,
 } from "../../lib/commands";
 
 interface Props {
@@ -25,6 +26,19 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
   const queryClient = useQueryClient();
   const [newSource, setNewSource] = useState("");
   const [search, setSearch] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCollapsed(marketplaceId: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(marketplaceId)) {
+        next.delete(marketplaceId);
+      } else {
+        next.add(marketplaceId);
+      }
+      return next;
+    });
+  }
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["environment-detail", envName] });
@@ -40,6 +54,11 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
 
   const removeMarketplaceMutation = useMutation({
     mutationFn: (marketplace: string) => removeMarketplace(envName, marketplace),
+    onSuccess: invalidate,
+  });
+
+  const updateMarketplaceMutation = useMutation({
+    mutationFn: (marketplace: string) => updateMarketplace(envName, marketplace),
     onSuccess: invalidate,
   });
 
@@ -110,7 +129,7 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search MCP servers…"
+            placeholder="Search plugins…"
             className="w-full rounded border border-neutral-800 bg-neutral-900 py-1.5 pl-8 pr-3 text-xs text-neutral-100 outline-none focus:border-neutral-600"
           />
         </div>
@@ -124,125 +143,154 @@ export function MarketplacesTab({ envName, marketplaces }: Props) {
         filteredMarketplaces.map((m) => (
           <section key={m.id}>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-mono text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                {m.id} {m.repo && <span className="text-neutral-600">({m.repo})</span>}
-              </h3>
               <button
-                onClick={() => handleRemoveMarketplace(m.id)}
-                disabled={removeMarketplaceMutation.isPending && removeMarketplaceMutation.variables === m.id}
-                className="flex items-center gap-1.5 text-xs text-red-400 underline hover:text-red-300 disabled:opacity-50"
+                onClick={() => toggleCollapsed(m.id)}
+                className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:text-neutral-300"
               >
-                {removeMarketplaceMutation.isPending && removeMarketplaceMutation.variables === m.id && (
-                  <SpinnerIcon size={11} />
-                )}
-                remove marketplace
+                <span
+                  className="transition-transform"
+                  style={{ transform: collapsed.has(m.id) ? "rotate(-90deg)" : "rotate(0deg)" }}
+                >
+                  <ChevronIcon size={11} />
+                </span>
+                {m.id} {m.repo && <span className="text-neutral-600">({m.repo})</span>}
+                <span className="text-neutral-600">({m.plugins.length} plugins)</span>
               </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => updateMarketplaceMutation.mutate(m.id)}
+                  disabled={updateMarketplaceMutation.isPending && updateMarketplaceMutation.variables === m.id}
+                  className="flex items-center gap-1.5 text-xs text-neutral-400 underline hover:text-neutral-200 disabled:opacity-50"
+                >
+                  {updateMarketplaceMutation.isPending && updateMarketplaceMutation.variables === m.id && (
+                    <SpinnerIcon size={11} />
+                  )}
+                  update marketplace
+                </button>
+                <button
+                  onClick={() => handleRemoveMarketplace(m.id)}
+                  disabled={removeMarketplaceMutation.isPending && removeMarketplaceMutation.variables === m.id}
+                  className="flex items-center gap-1.5 text-xs text-red-400 underline hover:text-red-300 disabled:opacity-50"
+                >
+                  {removeMarketplaceMutation.isPending && removeMarketplaceMutation.variables === m.id && (
+                    <SpinnerIcon size={11} />
+                  )}
+                  remove marketplace
+                </button>
+              </div>
             </div>
+            {updateMarketplaceMutation.error && updateMarketplaceMutation.variables === m.id && (
+              <p className="mb-2 text-xs text-red-400">
+                Error: {commandErrorMessage(updateMarketplaceMutation.error)}
+              </p>
+            )}
             {removeMarketplaceMutation.error && removeMarketplaceMutation.variables === m.id && (
               <p className="mb-2 text-xs text-red-400">
                 Error: {commandErrorMessage(removeMarketplaceMutation.error)}
               </p>
             )}
-            <div className="flex flex-col gap-2">
-              {m.plugins.map((p) => {
-                const id = pluginId(m.id, p);
-                return (
-                  <div
-                    key={p.name}
-                    className="rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${
-                            p.installed && p.enabled ? "bg-emerald-400" : "bg-neutral-600"
-                          }`}
-                        />
-                        <span className="truncate font-mono text-xs font-medium text-neutral-100">
-                          {p.name}
-                        </span>
-                        {p.version && (
-                          <span className="flex-shrink-0 font-mono text-[10px] text-neutral-600">
-                            v{p.version}
+            {(!collapsed.has(m.id) || query.length > 0) && (
+              <div className="flex flex-col gap-2">
+                {m.plugins.map((p) => {
+                  const id = pluginId(m.id, p);
+                  return (
+                    <div
+                      key={p.name}
+                      className="rounded-lg border border-neutral-800 bg-neutral-900/60 px-3.5 py-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${
+                              p.installed && p.enabled ? "bg-emerald-400" : "bg-neutral-600"
+                            }`}
+                          />
+                          <span className="truncate font-mono text-xs font-medium text-neutral-100">
+                            {p.name}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex flex-shrink-0 items-center gap-3">
-                        {p.installed ? (
-                          <>
+                          {p.version && (
+                            <span className="flex-shrink-0 font-mono text-[10px] text-neutral-600">
+                              v{p.version}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-shrink-0 items-center gap-3">
+                          {p.installed ? (
+                            <>
+                              <button
+                                onClick={() =>
+                                  p.enabled ? disableMutation.mutate(id) : enableMutation.mutate(id)
+                                }
+                                disabled={
+                                  (enableMutation.isPending && enableMutation.variables === id) ||
+                                  (disableMutation.isPending && disableMutation.variables === id)
+                                }
+                                className="relative flex h-[18px] w-8 items-center justify-center rounded-full transition-colors disabled:opacity-60"
+                                style={{ background: p.enabled ? "rgba(0,229,255,0.18)" : "#282B33" }}
+                              >
+                                {(enableMutation.isPending && enableMutation.variables === id) ||
+                                (disableMutation.isPending && disableMutation.variables === id) ? (
+                                  <SpinnerIcon size={11} />
+                                ) : (
+                                  <span
+                                    className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
+                                    style={{
+                                      left: p.enabled ? 15 : 2,
+                                      background: p.enabled ? "#00E5FF" : "#555B68",
+                                    }}
+                                  />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => uninstallMutation.mutate(id)}
+                                disabled={uninstallMutation.isPending && uninstallMutation.variables === id}
+                                className="text-neutral-600 hover:text-red-400 disabled:opacity-50"
+                              >
+                                {uninstallMutation.isPending && uninstallMutation.variables === id ? (
+                                  <SpinnerIcon size={13} />
+                                ) : (
+                                  <TrashIcon />
+                                )}
+                              </button>
+                            </>
+                          ) : (
                             <button
-                              onClick={() =>
-                                p.enabled ? disableMutation.mutate(id) : enableMutation.mutate(id)
-                              }
-                              disabled={
-                                (enableMutation.isPending && enableMutation.variables === id) ||
-                                (disableMutation.isPending && disableMutation.variables === id)
-                              }
-                              className="relative flex h-[18px] w-8 items-center justify-center rounded-full transition-colors disabled:opacity-60"
-                              style={{ background: p.enabled ? "rgba(0,229,255,0.18)" : "#282B33" }}
+                              onClick={() => installMutation.mutate(id)}
+                              disabled={installMutation.isPending && installMutation.variables === id}
+                              className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100 disabled:opacity-50"
                             >
-                              {(enableMutation.isPending && enableMutation.variables === id) ||
-                              (disableMutation.isPending && disableMutation.variables === id) ? (
+                              {installMutation.isPending && installMutation.variables === id && (
                                 <SpinnerIcon size={11} />
-                              ) : (
-                                <span
-                                  className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all"
-                                  style={{
-                                    left: p.enabled ? 15 : 2,
-                                    background: p.enabled ? "#00E5FF" : "#555B68",
-                                  }}
-                                />
                               )}
+                              {installMutation.isPending && installMutation.variables === id
+                                ? "installing…"
+                                : "install"}
                             </button>
-                            <button
-                              onClick={() => uninstallMutation.mutate(id)}
-                              disabled={uninstallMutation.isPending && uninstallMutation.variables === id}
-                              className="text-neutral-600 hover:text-red-400 disabled:opacity-50"
-                            >
-                              {uninstallMutation.isPending && uninstallMutation.variables === id ? (
-                                <SpinnerIcon size={13} />
-                              ) : (
-                                <TrashIcon />
-                              )}
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => installMutation.mutate(id)}
-                            disabled={installMutation.isPending && installMutation.variables === id}
-                            className="flex items-center gap-1.5 rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100 disabled:opacity-50"
-                          >
-                            {installMutation.isPending && installMutation.variables === id && (
-                              <SpinnerIcon size={11} />
-                            )}
-                            {installMutation.isPending && installMutation.variables === id
-                              ? "installing…"
-                              : "install"}
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
+                      {p.description && <p className="mt-1 text-xs text-neutral-500">{p.description}</p>}
+                      {installMutation.error && installMutation.variables === id && (
+                        <p className="mt-1 text-xs text-red-400">Error: {commandErrorMessage(installMutation.error)}</p>
+                      )}
+                      {uninstallMutation.error && uninstallMutation.variables === id && (
+                        <p className="mt-1 text-xs text-red-400">
+                          Error: {commandErrorMessage(uninstallMutation.error)}
+                        </p>
+                      )}
+                      {enableMutation.error && enableMutation.variables === id && (
+                        <p className="mt-1 text-xs text-red-400">Error: {commandErrorMessage(enableMutation.error)}</p>
+                      )}
+                      {disableMutation.error && disableMutation.variables === id && (
+                        <p className="mt-1 text-xs text-red-400">
+                          Error: {commandErrorMessage(disableMutation.error)}
+                        </p>
+                      )}
                     </div>
-                    {p.description && <p className="mt-1 text-xs text-neutral-500">{p.description}</p>}
-                    {installMutation.error && installMutation.variables === id && (
-                      <p className="mt-1 text-xs text-red-400">Error: {commandErrorMessage(installMutation.error)}</p>
-                    )}
-                    {uninstallMutation.error && uninstallMutation.variables === id && (
-                      <p className="mt-1 text-xs text-red-400">
-                        Error: {commandErrorMessage(uninstallMutation.error)}
-                      </p>
-                    )}
-                    {enableMutation.error && enableMutation.variables === id && (
-                      <p className="mt-1 text-xs text-red-400">Error: {commandErrorMessage(enableMutation.error)}</p>
-                    )}
-                    {disableMutation.error && disableMutation.variables === id && (
-                      <p className="mt-1 text-xs text-red-400">
-                        Error: {commandErrorMessage(disableMutation.error)}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         ))
       )}
