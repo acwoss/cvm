@@ -129,6 +129,11 @@ pub fn remove_marketplace(name: String, marketplace: String) -> Result<String, C
 }
 
 #[tauri::command]
+pub fn update_marketplace(name: String, marketplace: String) -> Result<String, CommandError> {
+    run_claude_plugin_command(&name, &["plugin", "marketplace", "update", &marketplace])
+}
+
+#[tauri::command]
 pub fn install_plugin(name: String, plugin: String) -> Result<String, CommandError> {
     run_claude_plugin_command(&name, &["plugin", "install", &plugin, "-y"])
 }

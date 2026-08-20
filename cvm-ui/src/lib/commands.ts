@@ -170,6 +170,10 @@ export function removeMarketplace(name: string, marketplace: string): Promise<st
   return invoke("remove_marketplace", { name, marketplace });
 }
 
+export function updateMarketplace(name: string, marketplace: string): Promise<string> {
+  return invoke("update_marketplace", { name, marketplace });
+}
+
 export function installPlugin(name: string, plugin: string): Promise<string> {
   return invoke("install_plugin", { name, plugin });
 }

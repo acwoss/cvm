@@ -28,6 +28,7 @@ pub fn run() {
             commands::remove_env_var,
             commands::add_marketplace,
             commands::remove_marketplace,
+            commands::update_marketplace,
             commands::install_plugin,
             commands::uninstall_plugin,
             commands::enable_plugin,
